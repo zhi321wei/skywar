@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
+import android.os.Looper;
 
 public class Sfx {
 
@@ -20,7 +21,7 @@ public class Sfx {
 
     private static SoundPool pool;
     private static final int[] ids = new int[10];
-    private static MediaPlayer bgm;
+    private static volatile MediaPlayer bgm;
     private static boolean sfxOn = true;
     private static boolean musicOn = true;
     private static long lastShoot;
@@ -71,23 +72,41 @@ public class Sfx {
         }
     }
 
-    public static void startMusic(Context c) {
+    /**
+     * BGM 在独立线程（自带 Looper）里创建。
+     * MediaPlayer.create 会同步解析整个音频文件，在主线程做的话，
+     * 一旦某个机型解析慢，onCreate 就不返回 —— 用户看到的就是「打开一片黑」。
+     */
+    public static void startMusic(final Context c) {
         if (bgm != null) {
             resumeMusic();
             return;
         }
-        try {
-            bgm = MediaPlayer.create(c, R.raw.bgm);
-            if (bgm != null) {
-                bgm.setLooping(true);
-                bgm.setVolume(0.42f, 0.42f);
-                if (musicOn) bgm.start();
+        if (musicStarting) return;
+        musicStarting = true;
+        Thread th = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+                try {
+                    MediaPlayer mp = MediaPlayer.create(c, R.raw.bgm);
+                    if (mp != null) {
+                        mp.setLooping(true);
+                        mp.setVolume(0.42f, 0.42f);
+                        bgm = mp;
+                        if (musicOn) mp.start();
+                    }
+                } catch (Throwable e) {
+                    bgm = null;
+                }
+                Looper.loop();
             }
-        } catch (Throwable e) {
-            bgm = null;
-        }
+        }, "skywar-bgm");
+        th.setDaemon(true);
+        th.start();
     }
 
+    private static volatile boolean musicStarting;
     public static void pauseMusic() {
         try {
             if (bgm != null && bgm.isPlaying()) bgm.pause();

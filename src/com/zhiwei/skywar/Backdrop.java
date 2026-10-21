@@ -1,48 +1,28 @@
 package com.zhiwei.skywar;
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.RectF;
 import android.graphics.Shader;
 
 /** 共享的深空滚动背景 */
 public class Backdrop {
 
     private static final Paint P = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private static final RectF DST = new RectF();
 
     /** scroll 单位为像素（虚拟坐标） */
     public static void draw(Canvas c, float W, float H, float scroll) {
-        Bitmap bg = Art.nebula;
-        if (bg == null || bg.isRecycled()) {
-            P.setShader(null);
-            P.setStyle(Paint.Style.FILL);
-            P.setAlpha(255);
-            P.setColor(0xFF070C18);
-            c.drawRect(0, 0, W, H, P);
-        } else {
-            float tile = bg.getHeight();
-            if (tile < H * 0.85f) {
-                // 兜底小图（正常不会走到）：直接拉伸铺满，避免只铺出一条
-                DST.set(0, 0, W, H);
-                P.setStyle(Paint.Style.FILL);
-                P.setAlpha(255);
-                P.setShader(null);
-                c.drawBitmap(bg, null, DST, P);
-            } else {
-                P.setStyle(Paint.Style.FILL);
-                P.setAlpha(255);
-                P.setShader(null);
-                float y = scroll % tile;
-                c.drawBitmap(bg, 0, y - tile, P);
-                c.drawBitmap(bg, 0, y, P);
-                c.drawBitmap(bg, 0, y + tile, P);
-            }
-        }
+        // 上一帧 stars() 最后留下的半透明颜色会原样带进来，
+        // 那样背景图就只画一部分不透明度，看上去整屏发灰发透
+        UI.resetPaint(P);
+        float tile = Art.nebula.getHeight();
+        float y = scroll % tile;
+        c.save();
+        c.drawBitmap(Art.nebula, 0, y - tile, P);
+        c.drawBitmap(Art.nebula, 0, y, P);
+        c.drawBitmap(Art.nebula, 0, y + tile, P);
+        c.restore();
         // 顶部/底部压暗，突出 UI
-        P.setStyle(Paint.Style.FILL);
         P.setShader(new LinearGradient(0, 0, 0, H, new int[]{0xB3050812, 0x33050812, 0xB3050812},
                 new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, W, H, P);
@@ -51,9 +31,6 @@ public class Backdrop {
 
     /** 星点（视差） */
     public static void stars(Canvas c, float W, float H, float time) {
-        P.setShader(null);
-        P.setStyle(Paint.Style.FILL);
-        P.setAlpha(255);
         for (int i = 0; i < 56; i++) {
             float seed = i * 37.13f;
             float x = (float) ((seed * 137.5) % W);
@@ -63,6 +40,5 @@ public class Backdrop {
             P.setColor((a << 24) | 0xBFD8FF);
             c.drawCircle(x, y, 0.9f + (i % 3) * 0.6f, P);
         }
-        P.setAlpha(255);
     }
 }

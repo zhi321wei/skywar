@@ -50,6 +50,7 @@ public class MenuScene extends Scene {
 
     @Override
     public void draw(Canvas c) {
+        UI.resetPaint(P);   // 每帧先复位自己的画笔，避免上一帧的 alpha/style 串到这一帧
         Backdrop.draw(c, W, H, scroll);
         Backdrop.stars(c, W, H, t);
 

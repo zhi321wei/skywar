@@ -1266,17 +1266,17 @@ public class BattleScene extends Scene {
     // ================= 绘制 =================
     @Override
     public void draw(Canvas c) {
+        UI.resetPaint(P);   // 每帧先复位自己的画笔，避免上一帧的 alpha/style 串到这一帧
         c.save();
-        float sh = 0f;
         if (shake > 0.4f) {
-            sh = shake;
-            c.translate((rnd.nextFloat() - 0.5f) * sh, (rnd.nextFloat() - 0.5f) * sh);
-            // 先铺不透明底色，震动平移后边缘不会透出
+            c.translate((rnd.nextFloat() - 0.5f) * shake, (rnd.nextFloat() - 0.5f) * shake);
+            // 震动平移后四周会露出来，先铺一层不透明深空色再把背景画大一圈，
+            // 否则边缘会露出上一帧的残影，看着像「画面缺了一块 / 变透明」
             P.setStyle(Paint.Style.FILL);
             P.setShader(null);
             P.setAlpha(255);
             P.setColor(0xFF05080F);
-            c.drawRect(-96f, -96f, W + 96f, H + 96f, P);
+            c.drawRect(-120f, -120f, W + 120f, H + 120f, P);
         }
 
         // 背景
@@ -1285,9 +1285,6 @@ public class BattleScene extends Scene {
         c.drawBitmap(Art.nebula, 0, y - tile, P);
         c.drawBitmap(Art.nebula, 0, y, P);
         c.drawBitmap(Art.nebula, 0, y + tile, P);
-        if (sh > 0.4f) {
-            c.drawBitmap(Art.nebula, 0, y + tile * 2f, P);
-        }
 
         // 快速星线
         for (int i = 0; i < 40; i++) {
@@ -1333,9 +1330,7 @@ public class BattleScene extends Scene {
         drawHud(c);
 
         if (nukeFlash > 0) {
-            P.setShader(null);
-            P.setStyle(Paint.Style.FILL);
-            P.setColor(((int) (Math.min(1f, nukeFlash) * 210) << 24) | 0xFFFFFF);
+            P.setColor(((int) (nukeFlash * 210) << 24) | 0xFFFFFF);
             c.drawRect(0, 0, W, H, P);
         }
         if (bossWarnT > 0) drawBossWarning(c);
@@ -1395,14 +1390,12 @@ public class BattleScene extends Scene {
             if (e.type == E_SNIPE && e.charge > 0) {
                 float k = 1f - e.charge / 0.95f;
                 int a = (int) (60 + 150 * k);
-                P.setStyle(Paint.Style.STROKE);
                 P.setColor((a << 24) | 0xFF3355);
                 P.setStrokeWidth(1.4f + 2.2f * k);
                 c.drawLine(e.x, e.y, e.aimX, e.aimY, P);
                 P.setColor((a << 24) | 0xFF6688);
                 c.drawCircle(e.aimX, e.aimY, 12f + 10f * k, P);
                 P.setStrokeWidth(1f);
-                P.setStyle(Paint.Style.FILL);
             }
 
             float s = 0.84f;
@@ -1425,9 +1418,8 @@ public class BattleScene extends Scene {
                 c.drawBitmap(bm, -bm.getWidth() / 2f, -bm.getHeight() / 2f, P);
             }
             if (e.hitFlash > 0) {
-                P.setStyle(Paint.Style.FILL);
-                P.setColor(0xFFFFFFFF);
                 P.setAlpha((int) (e.hitFlash * 150));
+                P.setColor(0xFFFFFFFF);
                 c.drawCircle(0, 0, e.r * 0.9f, P);
                 P.setAlpha(255);
             }

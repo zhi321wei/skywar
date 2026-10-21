@@ -2,7 +2,7 @@
 
 一款纵向卷轴空战射击手游（类似《雷电》系列），纯 Java + Canvas 实现，**零第三方依赖**，全部美术、音效、BGM 均由代码/脚本程序化生成。
 
-> 当前版本：**1.3**（versionCode 4）
+> 当前版本：**1.4**（versionCode 5）
 
 ## 下载安装
 
@@ -71,8 +71,8 @@
 修改 `VERSION` 文件后执行 `bash build.sh` 即可：
 
 ```
-versionName=1.3
-versionCode=4
+versionName=1.4
+versionCode=5
 ```
 
 ## 自行构建
@@ -117,6 +117,15 @@ src/com/zhiwei/skywar/
 渲染采用固定虚拟宽度 720、高度随屏幕比例自适应的坐标系，适配 16:9 ~ 21:9 各种机型。
 
 ## 更新日志
+
+### v1.4
+- **回退渲染与启动路径到 v1.1**：撤掉 v1.2/v1.3 对渲染入口的改动（`setFormat`、硬件画布优先级、`softOnly` 降级、启动提示层），`src/` 回到实测能正常进入游戏的 v1.1 状态
+- **重新修复画面变透明**：每帧统一复位 `Art` / `UI` / `Backdrop` 以及各场景的共享 `Paint`（`shader/alpha/style/strokeWidth/shadow`），杜绝上一帧状态串到下一帧
+- 整屏铺底改用 `drawColor()` 覆盖整个画布，不再用 View 矩形，Surface 比 View 大时边缘不会漏
+- `computeGeometry()` 以 `SurfaceHolder.getSurfaceFrame()` 尺寸为准，并加 NaN / 零尺寸兜底
+- 屏幕震动时先铺不透明深空色并外扩 120px，边缘不露残影
+- **BGM 移出主线程创建**（独立 `Looper` 线程），避免 `MediaPlayer.create()` 解析音频阻塞 `onCreate` 造成黑屏
+- v1.1 玩法内容与 v1.2 重制的 BGM 全部保留
 
 ### v1.3
 - 修复**打开游戏黑屏**：渲染路径改回已验证的软件画布 `lockCanvas()`，硬件画布仅在软件画布不可用时兜底；移除多余的 `setFormat(PixelFormat.OPAQUE)`

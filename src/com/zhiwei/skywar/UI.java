@@ -30,23 +30,33 @@ public class UI {
         TP.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
     }
 
-    /** 每帧开头复位共享画笔，防止渐变/描边/透明度状态串帧 */
+    /**
+     * 每帧开头复位共享画笔。
+     * 上一帧 panel/button 留下的 STROKE、渐变 shader、半透明 alpha 会污染下一帧，
+     * 轻则面板发白、文字带描边，重则整屏像蒙了一层雾（用户说的「画面变透明」）。
+     */
     static void resetPaints() {
-        P.setShader(null);
-        P.setAlpha(255);
-        P.setStyle(Paint.Style.FILL);
-        P.setStrokeWidth(1f);
-        P.setColor(0xFFFFFFFF);
-        P.setXfermode(null);
-        for (Paint p : new Paint[]{T, TP}) {
-            p.setShader(null);
-            p.setAlpha(255);
-            p.setStyle(Paint.Style.FILL);
-            p.setStrokeWidth(1f);
-            p.setColor(0xFFFFFFFF);
-            p.setShadowLayer(0f, 0f, 0f, 0);
-            p.setXfermode(null);
-        }
+        resetPaint(P);
+        resetPaint(T);
+        resetPaint(TP);
+    }
+
+    /**
+     * 复位任意共享画笔。场景里各自持有一支复用的 Paint，同样会在帧之间串状态：
+     * 上一帧最后一次 setAlpha(60) / setStyle(STROKE) / setShader(渐变) 会原封不动留给下一帧，
+     * 于是背景图被画成半透明、面板只剩描边——这就是「画面慢慢变透明」的来源。
+     */
+    public static void resetPaint(Paint p) {
+        if (p == null) return;
+        p.setShader(null);
+        p.setAlpha(255);
+        p.setStyle(Paint.Style.FILL);
+        p.setStrokeWidth(1f);
+        p.setColor(0xFFFFFFFF);
+        p.setXfermode(null);
+        p.setShadowLayer(0f, 0f, 0f, 0);
+        p.setMaskFilter(null);
+        p.setColorFilter(null);
     }
 
     public static String num(int v) {
