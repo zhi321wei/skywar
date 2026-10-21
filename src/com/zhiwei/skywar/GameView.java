@@ -103,8 +103,10 @@ public class GameView extends View {
                 diag = "场景进入失败: " + t.getClass().getSimpleName();
             }
         }
-        if (save.musicOn == 1) {
+        if (s != null && save.musicOn == 1) {
             try {
+                // 进入关卡换成激昂的战斗曲，回到菜单/机库/商店/结算换回舒缓曲
+                Sfx.setTrack(s instanceof BattleScene ? Sfx.TRACK_BATTLE : Sfx.TRACK_MENU);
                 Sfx.resumeMusic();
             } catch (Throwable ignored) {
             }
@@ -118,6 +120,13 @@ public class GameView extends View {
 
     public void onResumeGame() {
         applyPrefs();
+        if (save.musicOn == 1) {
+            // 从后台切回来时把当前曲目接着放（原来这里漏了，切后台再回来就没声音）
+            try {
+                Sfx.resumeMusic();
+            } catch (Throwable ignored) {
+            }
+        }
         startLoop();
         invalidate();
     }

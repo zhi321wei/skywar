@@ -19,11 +19,22 @@ public class Sfx {
     public static final int BOSS = 8;
     public static final int DEATH = 9;
 
+    /** 菜单 / 机库 / 商店 / 结算用的舒缓曲 */
+    public static final int TRACK_MENU = 0;
+    /** 关卡内用的激昂曲 */
+    public static final int TRACK_BATTLE = 1;
+
+    private static final int[] TRACK_RES = {R.raw.bgm, R.raw.bgm_battle};
+    private static final float[] TRACK_VOL = {0.42f, 0.50f};
+
     private static SoundPool pool;
     private static final int[] ids = new int[10];
-    private static volatile MediaPlayer bgm;
-    private static boolean sfxOn = true;
-    private static boolean musicOn = true;
+    private static final MediaPlayer[] mps = new MediaPlayer[TRACK_RES.length];
+    private static volatile int curTrack = TRACK_MENU;
+    private static volatile boolean bgmReady;
+    private static volatile boolean musicStarting;
+    private static volatile boolean sfxOn = true;
+    private static volatile boolean musicOn = true;
     private static long lastShoot;
 
     public static void init(Context c) {
@@ -76,9 +87,11 @@ public class Sfx {
      * BGM 在独立线程（自带 Looper）里创建。
      * MediaPlayer.create 会同步解析整个音频文件，在主线程做的话，
      * 一旦某个机型解析慢，onCreate 就不返回 —— 用户看到的就是「打开一片黑」。
+     *
+     * 两首曲子都在这里一次建好，之后切关卡只是 pause/start，没有解析延迟。
      */
     public static void startMusic(final Context c) {
-        if (bgm != null) {
+        if (bgmReady) {
             resumeMusic();
             return;
         }
@@ -88,16 +101,24 @@ public class Sfx {
             @Override
             public void run() {
                 Looper.prepare();
-                try {
-                    MediaPlayer mp = MediaPlayer.create(c, R.raw.bgm);
-                    if (mp != null) {
-                        mp.setLooping(true);
-                        mp.setVolume(0.42f, 0.42f);
-                        bgm = mp;
-                        if (musicOn) mp.start();
+                for (int i = 0; i < TRACK_RES.length; i++) {
+                    try {
+                        MediaPlayer mp = MediaPlayer.create(c, TRACK_RES[i]);
+                        if (mp != null) {
+                            mp.setLooping(true);
+                            mp.setVolume(TRACK_VOL[i], TRACK_VOL[i]);
+                            mps[i] = mp;
+                        }
+                    } catch (Throwable ignored) {
                     }
-                } catch (Throwable e) {
-                    bgm = null;
+                }
+                bgmReady = true;
+                MediaPlayer cur = mps[curTrack];
+                if (cur != null && musicOn) {
+                    try {
+                        cur.start();
+                    } catch (Throwable ignored) {
+                    }
                 }
                 Looper.loop();
             }
@@ -106,17 +127,45 @@ public class Sfx {
         th.start();
     }
 
-    private static volatile boolean musicStarting;
+    /** 切曲目：暂停旧的、从头播放新的。未就绪时先记下目标，就绪后再播 */
+    public static void setTrack(int idx) {
+        if (idx < 0 || idx >= mps.length) return;
+        if (idx == curTrack) return;
+        int old = curTrack;
+        curTrack = idx;
+        MediaPlayer o = mps[old];
+        if (o != null) {
+            try {
+                if (o.isPlaying()) o.pause();
+            } catch (Throwable ignored) {
+            }
+        }
+        MediaPlayer n = mps[idx];
+        if (n != null && musicOn) {
+            try {
+                n.seekTo(0);
+                n.start();
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    public static int getTrack() {
+        return curTrack;
+    }
+
     public static void pauseMusic() {
+        MediaPlayer mp = mps[curTrack];
         try {
-            if (bgm != null && bgm.isPlaying()) bgm.pause();
+            if (mp != null && mp.isPlaying()) mp.pause();
         } catch (Throwable ignored) {
         }
     }
 
     public static void resumeMusic() {
+        MediaPlayer mp = mps[curTrack];
         try {
-            if (bgm != null && musicOn && !bgm.isPlaying()) bgm.start();
+            if (mp != null && musicOn && !mp.isPlaying()) mp.start();
         } catch (Throwable ignored) {
         }
     }
