@@ -2,7 +2,7 @@
 
 一款纵向卷轴空战射击手游（类似《雷电》系列），纯 Java + Canvas 实现，**零第三方依赖**，全部美术、音效、BGM 均由代码/脚本程序化生成。
 
-> 当前版本：**1.4**（versionCode 5）
+> 当前版本：**1.5**（versionCode 6）
 
 ## 下载安装
 
@@ -71,8 +71,8 @@
 修改 `VERSION` 文件后执行 `bash build.sh` 即可：
 
 ```
-versionName=1.4
-versionCode=5
+versionName=1.5
+versionCode=6
 ```
 
 ## 自行构建
@@ -117,6 +117,15 @@ src/com/zhiwei/skywar/
 渲染采用固定虚拟宽度 720、高度随屏幕比例自适应的坐标系，适配 16:9 ~ 21:9 各种机型。
 
 ## 更新日志
+
+### v1.5
+- **渲染宿主从 `SurfaceView` 换成普通 `View`**：SurfaceView 的独立 Surface 在 buffer 协商、硬件画布、合成时序上都可能静默失败（进程活着、声音在放、屏幕全黑且不抛异常）。普通 View 的 `onDraw` 由 `ViewRootImpl` 逐帧驱动，与窗口同一条合成路径，不存在这类失败
+- 删除 `surfaceCreated/surfaceChanged/surfaceDestroyed`、`lockCanvas`、`lockHardwareCanvas`、`unlockCanvasAndPost` 全部 Surface 调用
+- 帧驱动改为 `postOnAnimation()` + `invalidate()`，update 与 draw 都在主线程
+- 去掉 `clipRect(0,0,W,H)`：裁剪区一旦为空，之后所有绘制都会被丢弃，画面只剩纯黑
+- **先出帧再烘焙**：第一帧先显示「初始化资源中…」，美术烘焙放到这一帧之后，启动不再有几百毫秒纯黑
+- Activity 叠加独立提示层：首帧成功即隐藏；4 秒无任何一帧则显示红色诊断（含视图尺寸与版本号）
+- 保留每帧复位共享画笔，继续压住「画面变透明」
 
 ### v1.4
 - **回退渲染与启动路径到 v1.1**：撤掉 v1.2/v1.3 对渲染入口的改动（`setFormat`、硬件画布优先级、`softOnly` 降级、启动提示层），`src/` 回到实测能正常进入游戏的 v1.1 状态

@@ -2,6 +2,52 @@
 
 版本规则：每次更新 versionName +0.1、versionCode +1，同一签名证书可直接覆盖安装，存档保留。
 
+## v1.5 · 2026-10-21
+
+### 渲染宿主从 SurfaceView 换成普通 View（黑屏的真正解法）
+
+前几版一直在 SurfaceView 这条链上修：换画布、改 Surface 格式、加降级、加提示层。
+这次不再修它，而是**换掉它**。
+
+根因：`SurfaceView` 用的是独立的一条 Surface，由 SurfaceFlinger 单独合成。
+整条链是「`surfaceCreated` → 渲染线程 `lockCanvas()` → `unlockCanvasAndPost()`」，
+任何一环异常都表现为同一个结果——**进程活着、BGM 照放、屏幕全黑，而且不抛异常**：
+
+- buffer 格式协商失败（`setFormat(OPAQUE)` 就踩过）
+- `lockHardwareCanvas()` 在部分 GPU 驱动上直接交出全黑帧
+- Surface 尺寸为 0 / 尺寸与 View 不一致
+- Surface 已创建但还没被合成，渲染线程空转
+
+这些情况代码里都检测不到，所以之前加了提示层也照样只能看到黑屏。
+
+普通 `View` 的 `onDraw` 由 `ViewRootImpl` 逐帧驱动，跟 Activity 窗口走**同一条**合成路径，
+不存在「View 在、但画面不来」的状态。改动：
+
+- `GameView` 由 `extends SurfaceView implements SurfaceHolder.Callback, Runnable`
+  改为 `extends View`，删除 `surfaceCreated / surfaceChanged / surfaceDestroyed`、
+  `lockCanvas / lockHardwareCanvas / unlockCanvasAndPost` 全部调用
+- 帧驱动改为 **`postOnAnimation()` + `invalidate()`**（`Choreographer` 节拍，跟屏幕刷新同步）；
+  update 与 draw 都在主线程，场景状态不再需要跨线程保护
+- 几何由 `onSizeChanged()` 的 View 尺寸计算，不再依赖 `getSurfaceFrame()`
+- **去掉 `clipRect(0,0,W,H)`**：裁剪区一旦算成空，之后所有绘制都会被丢弃，画面就只剩铺底的纯黑
+- 整屏铺底仍是每帧 `drawColor(0xFF000000)`，View 的 Canvas 就是整个 View 区域，一定盖满
+- 每帧复位共享画笔（`Art.P/S`、`UI.P/T/TP`、各场景 `Paint`）的策略保留，继续压住「画面变透明」
+
+### 启动过程全程有画面
+
+- **先出帧，再烘焙**：过去 `Art.build()`（十几张位图，含 720×1240 星云）在首次布局阶段同步执行，
+  屏幕会黑几百毫秒。现在第一帧先画「初始化资源中…」，把这一帧交出去之后再执行烘焙，
+  完成后再刷新成菜单
+- **Activity 叠了独立提示层**（`FrameLayout` + `TextView`）：首帧成功即隐藏；
+  若 4 秒连一帧都没画过（说明 View 根本没进入绘制流程），自动显示红色诊断文字、视图尺寸和版本号
+- 绘制 / 更新异常时，错误信息直接画在屏幕上，绝不会只留纯黑
+
+### 兼容性
+
+- 美术运行时只用到 `drawBitmap / drawText / drawPath / drawRect` 与线性渐变，
+  `BlurMaskFilter` 只用于烘焙阶段（离屏 Canvas），因此普通 View 的硬件加速路径完全可用
+- v1.1 玩法内容（追踪导弹、双联火控、融合、8 种敌机）与 v1.2 重制的 BGM 全部保留
+
 ## v1.4 · 2026-10-21
 
 ### 回退到 v1.1 的渲染与启动路径
