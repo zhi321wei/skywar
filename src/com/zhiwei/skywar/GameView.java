@@ -24,6 +24,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private Scene scene;
     private int drawErrs;
+    private boolean softOnly;      // 硬件画布出过问题后永久回退软件渲染
     private final Paint blackPaint = new Paint();
     private final Paint fadePaint = new Paint();
 
@@ -161,7 +162,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             Canvas c = null;
             SurfaceHolder holder = getHolder();
             try {
-                if (android.os.Build.VERSION.SDK_INT >= 23) {
+                if (!softOnly && android.os.Build.VERSION.SDK_INT >= 23) {
                     try {
                         c = holder.lockHardwareCanvas();
                     } catch (Throwable t) {
@@ -182,9 +183,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                         try {
                             sc.draw(c);
                         } catch (Throwable e) {
+                            drawErrs++;
+                            // 硬件画布连续两帧出问题就永久切软件渲染，宁可掉点帧也要画面正常
+                            if (drawErrs >= 2) softOnly = true;
                             if (drawErrs < 5) {
-                                drawErrs++;
-                                android.util.Log.e("SkyWar", "draw failed", e);
+                                android.util.Log.e("SkyWar", "draw failed (softOnly=" + softOnly + ")", e);
                             }
                         }
                         if (sc.fade < 1f) {
