@@ -155,7 +155,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             Canvas c = null;
             SurfaceHolder holder = getHolder();
             try {
-                c = holder.lockCanvas();
+                if (android.os.Build.VERSION.SDK_INT >= 23) {
+                    try {
+                        c = holder.lockHardwareCanvas();
+                    } catch (Throwable t) {
+                        c = null;
+                    }
+                }
+                if (c == null) c = holder.lockCanvas();
                 if (c != null) {
                     c.drawRect(0, 0, getWidth(), getHeight(), blackPaint);
                     c.save();
