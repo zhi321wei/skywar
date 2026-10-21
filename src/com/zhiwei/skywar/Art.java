@@ -225,73 +225,85 @@ public class Art {
 
     // ======================= BOSS =======================
     private static Bitmap makeBoss() {
-        int w = 340, h = 220;
+        int w = 420, h = 240;
         Bitmap b = newBmp(w, h);
         Canvas c = new Canvas(b);
-        float cx = 170;
+        float cx = 210;
 
-        // 主体
-        Path hull = poly(new float[]{
-                cx, 214, cx - 44, 176, cx - 120, 168, cx - 164, 124, cx - 150, 66,
-                cx - 92, 52, cx - 62, 16, cx, 6, cx + 62, 16, cx + 92, 52,
-                cx + 150, 66, cx + 164, 124, cx + 120, 168, cx + 44, 176});
-        glowRect(c, hull, 0xFFFF4A22, 22, 70);
-        P.setShader(new LinearGradient(0, 6, 0, 214,
-                new int[]{0xFF8E9BAE, 0xFF4C5768, 0xFF28303D},
-                new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP));
-        c.drawPath(hull, P);
-        P.setShader(null);
-        outline(c, hull, 0xFF161B24, 2.5f);
-
-        // 侧翼装甲
-        Path wingL = poly(new float[]{cx - 164, 124, cx - 210, 110, cx - 200, 150, cx - 150, 158});
-        Path wingR = poly(new float[]{cx + 164, 124, cx + 210, 110, cx + 200, 150, cx + 150, 158});
-        P.setShader(new LinearGradient(cx - 210, 0, cx - 120, 0, new int[]{0xFF6B7686, 0xFF323B49}, null, Shader.TileMode.CLAMP));
+        // 侧翼挂架
+        Path wingL = poly(new float[]{116, 88, 10, 106, 4, 164, 116, 156});
+        Path wingR = poly(new float[]{cx + 94, 88, cx + 200, 106, cx + 206, 164, cx + 94, 156});
+        P.setShader(new LinearGradient(cx - 204, 0, cx - 96, 0, new int[]{0xFF7C889C, 0xFF323B49}, null, Shader.TileMode.CLAMP));
         c.drawPath(wingL, P);
-        P.setShader(new LinearGradient(cx + 120, 0, cx + 210, 0, new int[]{0xFF323B49, 0xFF6B7686}, null, Shader.TileMode.CLAMP));
+        P.setShader(new LinearGradient(cx + 96, 0, cx + 204, 0, new int[]{0xFF323B49, 0xFF7C889C}, null, Shader.TileMode.CLAMP));
         c.drawPath(wingR, P);
         P.setShader(null);
         outline(c, wingL, 0xFF14181F, 2f);
         outline(c, wingR, 0xFF14181F, 2f);
 
-        // 炮塔
+        // 主舰体
+        Path hull = poly(new float[]{
+                cx, 14, cx + 30, 38, cx + 50, 68, cx + 100, 74, cx + 124, 106, cx + 124, 140,
+                cx + 86, 158, cx + 48, 168, cx + 30, 206, cx, 232, cx - 30, 206, cx - 48, 168,
+                cx - 86, 158, cx - 124, 140, cx - 124, 106, cx - 100, 74, cx - 50, 68, cx - 30, 38});
+        glowRect(c, hull, 0xFFFF4A22, 26, 60);
+        P.setShader(new LinearGradient(0, 8, 0, 232,
+                new int[]{0xFF9AA7BA, 0xFF525E70, 0xFF232B37},
+                new float[]{0f, 0.42f, 1f}, Shader.TileMode.CLAMP));
+        c.drawPath(hull, P);
+        P.setShader(null);
+        outline(c, hull, 0xFF14181F, 2.5f);
+
+        // 装甲分段线
+        P.setStyle(Paint.Style.STROKE);
+        P.setStrokeWidth(2f);
+        P.setColor(0x44FFFFFF);
+        c.drawLine(cx - 94, 80, cx + 94, 80, P);
+        c.drawLine(cx - 104, 150, cx + 104, 150, P);
+        P.setColor(0x33000000);
+        c.drawLine(cx - 32, 44, cx - 32, 160, P);
+        c.drawLine(cx + 32, 44, cx + 32, 160, P);
+        P.setStyle(Paint.Style.FILL);
+
+        // 前向主炮
         for (int i = -1; i <= 1; i += 2) {
-            float x = cx + i * 118;
-            P.setColor(0xFF3B4553);
-            c.drawRect(x - 15, 120, x + 15, 178, P);
-            P.setColor(0xFF55606F);
-            c.drawRect(x - 15, 120, x + 15, 132, P);
+            float x = cx + i * 104;
+            P.setColor(0xFF39434F);
+            c.drawRect(x - 16, 112, x + 16, 186, P);
+            P.setColor(0xFF5A6675);
+            c.drawRect(x - 16, 112, x + 16, 126, P);
+            P.setColor(0xFF232A34);
+            c.drawRect(x - 9, 172, x + 9, 192, P);
             P.setColor(0xFFFF6A3C);
-            c.drawCircle(x, 176, 8, P);
+            c.drawCircle(x, 190, 8f, P);
             P.setColor(0xFFFFE1B0);
-            c.drawCircle(x, 176, 4, P);
+            c.drawCircle(x, 190, 3.8f, P);
         }
 
         // 中央反应堆
-        P.setShader(new RadialGradient(cx, 104, 62, new int[]{0xFFFFFFFF, 0xFFFFB347, 0xFFFF3A17, 0x00000000}, new float[]{0f, 0.25f, 0.55f, 1f}, Shader.TileMode.CLAMP));
-        c.drawCircle(cx, 104, 62, P);
+        P.setShader(new RadialGradient(cx, 108, 70, new int[]{0xFFFFFFFF, 0xFFFFB347, 0xFFFF3A17, 0x00000000},
+                new float[]{0f, 0.22f, 0.52f, 1f}, Shader.TileMode.CLAMP));
+        c.drawCircle(cx, 108, 70, P);
         P.setShader(null);
         P.setStyle(Paint.Style.STROKE);
         P.setStrokeWidth(3f);
         P.setColor(0xCCFFD9A0);
-        c.drawCircle(cx, 104, 40, P);
-        c.drawCircle(cx, 104, 26, P);
+        c.drawCircle(cx, 108, 46, P);
+        P.setColor(0x88FF8A40);
+        c.drawCircle(cx, 108, 31, P);
         P.setStyle(Paint.Style.FILL);
         P.setColor(0xFFFFFFFF);
-        c.drawCircle(cx, 104, 12, P);
-
-        // 装甲细节线
-        P.setStyle(Paint.Style.STROKE);
-        P.setStrokeWidth(2f);
-        P.setColor(0x33FFFFFF);
-        c.drawPath(poly(new float[]{cx - 90, 60, cx + 90, 60}), P);
-        c.drawPath(poly(new float[]{cx - 100, 152, cx + 100, 152}), P);
-        P.setStyle(Paint.Style.FILL);
+        c.drawCircle(cx, 108, 14, P);
 
         // 顶部感应器
-        P.setColor(0xFF9BF6FF);
-        c.drawCircle(cx - 46, 30, 5, P);
-        c.drawCircle(cx + 46, 30, 5, P);
+        for (int i = -1; i <= 1; i += 2) {
+            P.setColor(0xFF0B2A38);
+            c.drawCircle(cx + i * 42, 40, 10f, P);
+            P.setColor(0xFF9BF6FF);
+            c.drawCircle(cx + i * 42, 40, 5f, P);
+            P.setColor(0xFFFFFFFF);
+            c.drawCircle(cx + i * 42, 40, 2f, P);
+        }
         return b;
     }
 

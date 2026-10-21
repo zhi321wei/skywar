@@ -1,5 +1,6 @@
 build/
 tools/icon_preview.png
+tools/art_check.png
 *.iml
 .idea/
 .gradle/

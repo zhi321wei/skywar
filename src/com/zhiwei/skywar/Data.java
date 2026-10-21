@@ -72,7 +72,7 @@ public class Data {
     }
 
     public static float bossHp(int stage) {
-        return 900f + 640f * stage;
+        return 520f + 600f * stage;
     }
 
     // ---------------- 花费 ----------------

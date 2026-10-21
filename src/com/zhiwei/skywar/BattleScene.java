@@ -722,9 +722,7 @@ public class BattleScene extends Scene {
             boolean hit = false;
             for (int j = enemies.size() - 1; j >= 0; j--) {
                 Enemy e = enemies.get(j);
-                float rr = e.r + b.r;
-                float dx = e.x - b.x, dy = e.y - b.y;
-                if (dx * dx + dy * dy < rr * rr) {
+                if (hitsEnemy(b, e)) {
                     if (b.lastHit == e.id) continue;
                     b.lastHit = e.id;
                     damageEnemy(e, b.dmg, b.x, b.y);
@@ -757,7 +755,7 @@ public class BattleScene extends Scene {
             for (int j = enemies.size() - 1; j >= 0; j--) {
                 Enemy e = enemies.get(j);
                 float dx = e.x - px, dy = e.y - py;
-                float rr = e.r * 0.8f + 16f;
+                float rr = (e.type == E_BOSS ? 120f : e.r * 0.8f) + 16f;
                 if (dx * dx + dy * dy < rr * rr) {
                     if (e.type == E_BOSS) {
                         hurtPlayer(30f);
@@ -769,6 +767,16 @@ public class BattleScene extends Scene {
                 }
             }
         }
+    }
+
+    /** BOSS 用矩形碰撞盒，普通敌机用小圆 */
+    private boolean hitsEnemy(Bullet b, Enemy e) {
+        if (e.type == E_BOSS) {
+            return Math.abs(b.x - e.x) < 198f + b.r && Math.abs(b.y - e.y) < 106f + b.r;
+        }
+        float rr = e.r + b.r;
+        float dx = e.x - b.x, dy = e.y - b.y;
+        return dx * dx + dy * dy < rr * rr;
     }
 
     private void damageEnemy(Enemy e, float dmg, float hx, float hy) {
