@@ -13,7 +13,8 @@ import java.util.Random;
 /** 战斗场景：纵向卷轴空战 */
 public class BattleScene extends Scene {
 
-    private static final int E_SCOUT = 0, E_ZIG = 1, E_TANK = 2, E_KAM = 3, E_BOSS = 4;
+    private static final int E_SCOUT = 0, E_ZIG = 1, E_TANK = 2, E_KAM = 3,
+            E_SHIELD = 4, E_SPLIT = 5, E_SNIPE = 6, E_SWARM = 7, E_BOSS = 8;
 
     private static final int P_COIN = 0, P_EN = 1, P_SHIELD = 2, P_REPAIR = 3;
 
@@ -25,7 +26,7 @@ public class BattleScene extends Scene {
     private float px, py;
     private float hp, maxHp, shield, maxShield;
     private float energy, maxEnergy = 100f;
-    private float fireT, sideT, invuln;
+    private float fireT, fireT2, sideT, invuln;
     private float engineT;
 
     private int score;
@@ -73,11 +74,16 @@ public class BattleScene extends Scene {
     // ================= 实体 =================
     static class Bullet {
         float x, y, vx, vy, dmg, r;
-        int kind;          // 0 火神 1 激光 2 等离子 3 敌方小球 4 敌方大球
+        int kind;          // 0 火神 1 激光 2 等离子 3 敌方小球 4 敌方大球 5 追踪导弹
         int pierce;
         float angle;
         float life;
         int lastHit = -1;
+        int target = -1;   // 追踪目标 id
+        float turn;        // 转向角速度 rad/s
+        float accel;       // 加速度
+        boolean aoe;       // 命中溅射
+        boolean split;     // 激光裂变
     }
 
     static class Enemy {
@@ -91,6 +97,8 @@ public class BattleScene extends Scene {
         float capY;
         float aimX, aimY;
         int id;
+        float guard;       // 护盾机剩余护盾
+        float charge;      // 狙击机蓄力计时
     }
 
     static class Particle {
@@ -262,10 +270,19 @@ public class BattleScene extends Scene {
 
         // 主武器
         fireT += dt;
-        float interval = Math.max(0.045f, st.fireInterval);
+        float interval = Math.max(0.045f, st.a.interval);
         while (fireT >= interval) {
             fireT -= interval;
-            fireMain();
+            fireWeapon(st.a, false);
+        }
+        // 副武器：独立供弹计时
+        if (st.b != null) {
+            fireT2 += dt;
+            float interval2 = Math.max(0.05f, st.b.interval);
+            while (fireT2 >= interval2) {
+                fireT2 -= interval2;
+                fireWeapon(st.b, true);
+            }
         }
 
         // 副炮
@@ -285,45 +302,107 @@ public class BattleScene extends Scene {
         energy = Math.min(maxEnergy, energy + dt * 4.6f);
     }
 
-    private void fireMain() {
-        if (st.wType == 0) {
-            int n = st.streams;
+    /** 通用开火：主武器与副武器共用同一套弹道生成 */
+    private void fireWeapon(Data.Wpn w, boolean secondary) {
+        float by = py - 26f;
+        if (w.type == 0) {
+            int n = w.streams;
             for (int i = 0; i < n; i++) {
                 float off = n == 1 ? 0f : (i - (n - 1) / 2f) * 17f;
-                shootPlayer(px + off, py - 26f, 0f, -st.bulletSpeed, st.damage, 0, 0);
+                float x = px + off + (secondary ? 16f : 0f);
+                Bullet b = new Bullet();
+                b.x = x;
+                b.y = by;
+                b.vx = 0;
+                b.vy = -w.speed;
+                b.dmg = w.damage;
+                b.kind = 0;
+                b.pierce = w.vulcanPierce;
+                b.r = 8f;
+                pBullets.add(b);
             }
-            Sfx.play(Sfx.SHOOT, 0.34f);
-        } else if (st.wType == 1) {
+            Sfx.play(Sfx.SHOOT, secondary ? 0.22f : 0.34f);
+        } else if (w.type == 1) {
             Bullet b = new Bullet();
-            b.x = px;
+            b.x = px + (secondary ? 14f : 0f);
             b.y = py - 30f;
             b.vx = 0;
-            b.vy = -st.bulletSpeed;
-            b.dmg = st.damage;
+            b.vy = -w.speed;
+            b.dmg = w.damage;
             b.kind = 1;
-            b.pierce = st.pierce;
+            b.pierce = w.pierce;
             b.r = 11f;
+            b.split = w.laserSplit;
             pBullets.add(b);
-            Sfx.play(Sfx.LASER, 0.30f);
-        } else {
-            int n = st.spread;
-            float spreadDeg = 56f;
+            Sfx.play(Sfx.LASER, secondary ? 0.20f : 0.30f);
+        } else if (w.type == 2) {
+            int n = w.spread;
+            float spreadDeg = Math.min(96f, 46f + n * 2.4f);
             for (int i = 0; i < n; i++) {
                 float a = -spreadDeg / 2f + spreadDeg * (n == 1 ? 0.5f : i / (float) (n - 1));
                 float rad = (float) Math.toRadians(a);
                 Bullet b = new Bullet();
-                b.x = px;
+                b.x = px + (secondary ? 14f : 0f);
                 b.y = py - 22f;
-                b.vx = (float) Math.sin(rad) * st.bulletSpeed * 0.92f;
-                b.vy = -(float) Math.cos(rad) * st.bulletSpeed * 0.92f;
-                b.dmg = st.damage;
+                b.vx = (float) Math.sin(rad) * w.speed * 0.92f;
+                b.vy = -(float) Math.cos(rad) * w.speed * 0.92f;
+                b.dmg = w.damage;
                 b.kind = 2;
                 b.r = 9f;
                 b.angle = a;
                 pBullets.add(b);
             }
-            Sfx.play(Sfx.SHOOT, 0.28f);
+            Sfx.play(Sfx.SHOOT, secondary ? 0.22f : 0.28f);
+        } else {
+            // 追踪导弹：扇形抛出后自动锁定
+            int n = w.missiles;
+            for (int i = 0; i < n; i++) {
+                float off = (i - (n - 1) / 2f) * 22f;
+                float a = (float) Math.toRadians(off * 1.8f);
+                Bullet b = new Bullet();
+                b.x = px + off * 0.6f + (secondary ? 14f : 0f);
+                b.y = py + 4f;
+                b.vx = (float) Math.sin(a) * 250f;
+                b.vy = -(float) Math.cos(a) * 280f;
+                b.dmg = w.damage;
+                b.kind = 5;
+                b.r = 15f;
+                b.turn = 8.2f;
+                b.accel = 420f;
+                b.aoe = true;
+                b.angle = off * 1.8f;
+                b.target = nearestTargetId(b.x, b.y);
+                pBullets.add(b);
+            }
+            Sfx.play(Sfx.LASER, secondary ? 0.24f : 0.34f);
         }
+    }
+
+    /** 最近的可锁定目标 */
+    private int nearestTargetId(float x, float y) {
+        int best = -1;
+        float bd = Float.MAX_VALUE;
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy e = enemies.get(i);
+            if (e.y < -40f) continue;
+            float dx = e.x - x, dy = e.y - y;
+            // 优先锁定上方目标
+            float d = dx * dx + dy * dy + (dy > 0 ? 90000f : 0f);
+            if (d < bd) {
+                bd = d;
+                best = e.id;
+            }
+        }
+        return best;
+    }
+
+    private Enemy findEnemy(int id) {
+        if (id < 0) return null;
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy e = enemies.get(i);
+            if (e.id == id) return e;
+        }
+        return null;
     }
 
     private void shootPlayer(float x, float y, float vx, float vy, float dmg, int kind, int pierce) {
@@ -362,10 +441,25 @@ public class BattleScene extends Scene {
         }
     }
 
+    /** 按关卡解锁的敌机池，越后期越凶 */
+    private int pickWaveType() {
+        int[] pool;
+        if (stage <= 1) {
+            pool = new int[]{0, 0, 0, 1, 1, 2, 3};
+        } else if (stage <= 3) {
+            pool = new int[]{0, 0, 1, 1, 2, 2, 3, 4, 4, 7};
+        } else if (stage <= 6) {
+            pool = new int[]{0, 1, 1, 2, 2, 3, 4, 4, 5, 6, 7};
+        } else {
+            pool = new int[]{0, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6, 7};
+        }
+        return pool[rnd.nextInt(pool.length)];
+    }
+
     private void spawnWave() {
-        int pick = rnd.nextInt(100);
         float scaleHp = Data.enemyScale(stage);
-        if (pick < 34) {
+        int type = pickWaveType();
+        if (type == 0) {
             // V 字编队
             int n = 3 + rnd.nextInt(3);
             float cx = 120f + rnd.nextFloat() * (W - 240f);
@@ -376,7 +470,7 @@ public class BattleScene extends Scene {
                 e.vy = 150f + stage * 4f;
                 enemies.add(e);
             }
-        } else if (pick < 58) {
+        } else if (type == 1) {
             // 斜向掠过
             boolean fromLeft = rnd.nextBoolean();
             int n = 3 + rnd.nextInt(3);
@@ -390,8 +484,8 @@ public class BattleScene extends Scene {
                 e.freq = 3.2f;
                 enemies.add(e);
             }
-        } else if (pick < 78) {
-            // 炮台机
+        } else if (type == 2) {
+            // 炮台机 + 护卫
             Enemy e = makeEnemy(E_TANK, 110f + rnd.nextFloat() * (W - 220f), -90f);
             e.hp = e.maxHp = 90f * scaleHp;
             e.vy = 74f;
@@ -399,12 +493,12 @@ public class BattleScene extends Scene {
             e.fireT = 0.8f;
             enemies.add(e);
             for (int i = 0; i < 2; i++) {
-                Enemy s = makeEnemy(E_SCOUT, e.x + (i == 0 ? -60f : 60f), -140f);
-                s.hp = s.maxHp = 14f * scaleHp;
-                s.vy = 140f;
-                enemies.add(s);
+                Enemy s2 = makeEnemy(E_SCOUT, e.x + (i == 0 ? -60f : 60f), -140f);
+                s2.hp = s2.maxHp = 14f * scaleHp;
+                s2.vy = 140f;
+                enemies.add(s2);
             }
-        } else {
+        } else if (type == 3) {
             // 自杀冲撞机
             int n = 2 + rnd.nextInt(3);
             for (int i = 0; i < n; i++) {
@@ -413,6 +507,48 @@ public class BattleScene extends Scene {
                 e.aimX = px;
                 e.aimY = py;
                 e.vy = 90f;
+                enemies.add(e);
+            }
+        } else if (type == 4) {
+            // 护盾护卫机：皮厚，定期环形弹幕
+            int n = 1 + rnd.nextInt(2);
+            for (int i = 0; i < n; i++) {
+                Enemy e = makeEnemy(E_SHIELD, 100f + rnd.nextFloat() * (W - 200f), -80f - i * 90f);
+                e.hp = e.maxHp = 55f * scaleHp;
+                e.guard = 40f * scaleHp;
+                e.vy = 82f + stage * 2f;
+                e.fireT = 1.4f;
+                enemies.add(e);
+            }
+        } else if (type == 5) {
+            // 分裂母机：击毁后炸成 3 架蜂群
+            Enemy e = makeEnemy(E_SPLIT, 130f + rnd.nextFloat() * (W - 260f), -100f);
+            e.hp = e.maxHp = 110f * scaleHp;
+            e.vy = 60f;
+            e.fireT = 1.8f;
+            enemies.add(e);
+        } else if (type == 6) {
+            // 狙击机：滞空蓄力后发射高速弹
+            int n = 1 + rnd.nextInt(2);
+            for (int i = 0; i < n; i++) {
+                Enemy e = makeEnemy(E_SNIPE, 90f + rnd.nextFloat() * (W - 180f), -70f - i * 70f);
+                e.hp = e.maxHp = 45f * scaleHp;
+                e.vy = 130f;
+                e.capY = 110f + rnd.nextFloat() * 120f;
+                e.baseX = e.x;
+                e.aimX = px;
+                e.fireT = 1.6f + i * 0.5f;
+                enemies.add(e);
+            }
+        } else {
+            // 蜂群：数量多、血量低
+            int n = 5 + rnd.nextInt(4);
+            float cx = 100f + rnd.nextFloat() * (W - 200f);
+            for (int i = 0; i < n; i++) {
+                Enemy e = makeEnemy(E_SWARM, cx + (rnd.nextFloat() - 0.5f) * 150f, -50f - i * 34f);
+                e.hp = e.maxHp = 9f * scaleHp;
+                e.vy = 190f + stage * 4f;
+                e.baseX = rnd.nextFloat() * 6.28f;
                 enemies.add(e);
             }
         }
@@ -425,7 +561,8 @@ public class BattleScene extends Scene {
         e.x = x;
         e.y = y;
         e.t = 0;
-        e.r = type == E_TANK ? 42f : type == E_ZIG ? 28f : 24f;
+        e.r = type == E_TANK ? 42f : type == E_SPLIT ? 46f : type == E_SHIELD ? 36f
+                : type == E_ZIG ? 28f : type == E_SNIPE ? 26f : type == E_SWARM ? 17f : 24f;
         e.vy = 140f;
         return e;
     }
@@ -490,6 +627,60 @@ public class BattleScene extends Scene {
                     e.vy = dy / d * (150f + e.t * 120f);
                     e.x += e.vx * dt * slow;
                     e.y += e.vy * dt * slow;
+                    break;
+                case E_SHIELD:
+                    e.y += e.vy * dt * slow;
+                    e.x += (float) Math.sin(e.t * 1.4f) * 52f * dt * slow;
+                    e.fireT -= dt * slow;
+                    if (e.fireT <= 0 && e.y > 60f && e.y < H * 0.72f) {
+                        e.fireT = 2.5f;
+                        for (int k = 0; k < 8; k++) {
+                            float a = (float) (Math.PI * 2 * k / 8 + e.t);
+                            eBullets.add(makeEBullet(e.x, e.y,
+                                    (float) Math.cos(a) * 150f, (float) Math.sin(a) * 150f + 70f));
+                        }
+                    }
+                    break;
+                case E_SPLIT:
+                    e.y += e.vy * dt * slow;
+                    e.x += (float) Math.sin(e.t * 0.85f) * 78f * dt * slow;
+                    e.fireT -= dt * slow;
+                    if (e.fireT <= 0 && e.y > 50f) {
+                        e.fireT = 2.2f;
+                        enemyFan(e.x, e.y + 30f, 5, 40f, 175f + stage * 6f);
+                    }
+                    break;
+                case E_SNIPE:
+                    if (e.y < e.capY) {
+                        e.y += e.vy * dt * slow;
+                    } else if (e.charge > 0) {
+                        // 蓄力：缓慢跟随玩家
+                        e.charge -= dt * slow;
+                        e.aimX += (px - e.aimX) * Math.min(1f, dt * 1.8f);
+                        e.aimY = py;
+                        if (e.charge <= 0) {
+                            float sx = e.aimX - e.x, sy = e.aimY - e.y;
+                            float dd = (float) Math.sqrt(sx * sx + sy * sy) + 0.01f;
+                            float sp = 460f + stage * 12f;
+                            Bullet bb = makeEBullet(e.x, e.y + 20f, sx / dd * sp, sy / dd * sp);
+                            bb.kind = 4;
+                            bb.r = 12f;
+                            eBullets.add(bb);
+                            Sfx.play(Sfx.LASER, 0.30f);
+                            e.fireT = 2.3f;
+                            e.charge = 0;
+                        }
+                    } else if (e.t > 12f) {
+                        e.y -= 120f * dt * slow;
+                    } else {
+                        e.x += (e.baseX - e.x) * Math.min(1f, dt * 0.7f);
+                        e.fireT -= dt * slow;
+                        if (e.fireT <= 0) e.charge = 0.95f;
+                    }
+                    break;
+                case E_SWARM:
+                    e.y += e.vy * dt * slow;
+                    e.x += (float) Math.sin(e.t * 4.0f + e.baseX) * 110f * dt * slow;
                     break;
                 case E_BOSS:
                     updateBoss(e, dt, slow);
@@ -593,10 +784,18 @@ public class BattleScene extends Scene {
     private void updateBullets(float dt) {
         for (int i = pBullets.size() - 1; i >= 0; i--) {
             Bullet b = pBullets.get(i);
-            b.x += b.vx * dt;
-            b.y += b.vy * dt;
+            if (b.kind == 5) {
+                updateMissile(b, dt);
+            } else {
+                b.x += b.vx * dt;
+                b.y += b.vy * dt;
+            }
             b.life += dt;
-            if (b.y < -60 || b.y > H + 60 || b.x < -60 || b.x > W + 60 || b.life > 3f) {
+            if (b.kind == 5) {
+                if (b.y < -70 || b.y > H + 70 || b.x < -70 || b.x > W + 70 || b.life > 2.8f) {
+                    pBullets.remove(i);
+                }
+            } else if (b.y < -60 || b.y > H + 60 || b.x < -60 || b.x > W + 60 || b.life > 3f) {
                 pBullets.remove(i);
             }
         }
@@ -609,6 +808,47 @@ public class BattleScene extends Scene {
                 eBullets.remove(i);
             }
         }
+    }
+
+    /** 追踪导弹：朝目标持续转向并加速 */
+    private void updateMissile(Bullet b, float dt) {
+        Enemy tg = findEnemy(b.target);
+        if (tg == null) {
+            b.target = nearestTargetId(b.x, b.y);
+            tg = findEnemy(b.target);
+        }
+        float spd = (float) Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        spd = Math.min(1120f, spd + b.accel * dt);
+        float cur = (float) Math.atan2(b.vy, b.vx);
+        float want = (float) (-Math.PI / 2);
+        if (tg != null) {
+            want = (float) Math.atan2(tg.y - b.y, tg.x - b.x);
+        }
+        float diff = want - cur;
+        while (diff > Math.PI) diff -= (float) (Math.PI * 2);
+        while (diff < -Math.PI) diff += (float) (Math.PI * 2);
+        float maxT = b.turn * dt;
+        if (diff > maxT) diff = maxT;
+        if (diff < -maxT) diff = -maxT;
+        float na = cur + diff;
+        b.vx = (float) Math.cos(na) * spd;
+        b.vy = (float) Math.sin(na) * spd;
+        b.angle = (float) Math.toDegrees(na) + 90f;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+
+        // 尾焰烟迹
+        Particle p = new Particle();
+        p.x = b.x - b.vx * 0.012f;
+        p.y = b.y - b.vy * 0.012f;
+        p.vx = -b.vx * 0.10f + (rnd.nextFloat() - 0.5f) * 40f;
+        p.vy = -b.vy * 0.10f + (rnd.nextFloat() - 0.5f) * 40f;
+        p.life = 0.26f;
+        p.maxLife = 0.26f;
+        p.size = 7f;
+        p.color = 0xFFFFA24A;
+        p.drag = 0.9f;
+        addParticle(p);
     }
 
     private void updateParticles(float dt) {
@@ -716,23 +956,30 @@ public class BattleScene extends Scene {
 
     // ---------------- 碰撞 ----------------
     private void checkCollisions() {
-        // 玩家子弹 vs 敌人
+        // 玩家子弹 vs 敌人（用快照遍历，避免命中溅射时边遍历边删）
+        Enemy[] snap = enemies.toArray(new Enemy[0]);
         for (int i = pBullets.size() - 1; i >= 0; i--) {
             Bullet b = pBullets.get(i);
             boolean hit = false;
-            for (int j = enemies.size() - 1; j >= 0; j--) {
-                Enemy e = enemies.get(j);
-                if (hitsEnemy(b, e)) {
-                    if (b.lastHit == e.id) continue;
-                    b.lastHit = e.id;
-                    damageEnemy(e, b.dmg, b.x, b.y);
-                    if (b.kind == 1 && b.pierce > 0) {
-                        b.pierce--;
-                        continue;
-                    }
-                    hit = true;
-                    break;
+            for (int j = 0; j < snap.length; j++) {
+                Enemy e = snap[j];
+                if (e.hp <= 0 || enemies.indexOf(e) < 0) continue;
+                if (!hitsEnemy(b, e)) continue;
+                if (b.lastHit == e.id) continue;
+                b.lastHit = e.id;
+                damageEnemy(e, b.dmg, b.x, b.y);
+                if (b.aoe) {
+                    splash(b.x, b.y, 68f, b.dmg * 0.55f, e);
+                    burst(b.x, b.y, 14, 240f, 11f, 0xFFFFB060, 0.45f);
+                    Sfx.play(Sfx.EXPLODE, 0.24f);
                 }
+                if (b.split) splitLaser(b);
+                if (b.pierce > 0) {
+                    b.pierce--;
+                    continue;
+                }
+                hit = true;
+                break;
             }
             if (hit) pBullets.remove(i);
         }
@@ -780,7 +1027,15 @@ public class BattleScene extends Scene {
     }
 
     private void damageEnemy(Enemy e, float dmg, float hx, float hy) {
-        e.hp -= dmg;
+        float d = dmg;
+        if (e.guard > 0) {
+            float use = Math.min(e.guard, d);
+            e.guard -= use;
+            d -= use;
+            burst(hx, hy, 4, 130f, 6f, 0xFF7FE8FF, 0.26f);
+            if (e.guard <= 0) Sfx.play(Sfx.HIT, 0.4f);
+        }
+        e.hp -= d;
         e.hitFlash = 1f;
         if (rnd.nextFloat() < 0.35f) {
             burst(hx, hy, 3, 90f, 5f, 0xFFFFD9A0, 0.22f);
@@ -788,6 +1043,51 @@ public class BattleScene extends Scene {
         if (e.hp <= 0) {
             killEnemy(e);
         }
+    }
+
+    /** 只扣血不处理死亡，供溅射使用 */
+    private void hitHp(Enemy e, float dmg) {
+        float d = dmg;
+        if (e.guard > 0) {
+            float use = Math.min(e.guard, d);
+            e.guard -= use;
+            d -= use;
+        }
+        e.hp -= d;
+        e.hitFlash = 1f;
+    }
+
+    /** 导弹爆炸溅射 */
+    private void splash(float x, float y, float r, float dmg, Enemy skip) {
+        Enemy[] snap = enemies.toArray(new Enemy[0]);
+        for (int i = 0; i < snap.length; i++) {
+            Enemy e = snap[i];
+            if (e == skip || e.hp <= 0) continue;
+            float dx = e.x - x, dy = e.y - y;
+            if (dx * dx + dy * dy < r * r) hitHp(e, dmg);
+        }
+        for (int i = enemies.size() - 1; i >= 0; i--) {
+            Enemy e = enemies.get(i);
+            if (e.hp <= 0) killEnemy(e);
+        }
+    }
+
+    /** 激光裂变：命中后炸出三发散射弹 */
+    private void splitLaser(Bullet b) {
+        for (int k = -1; k <= 1; k++) {
+            float a = (float) Math.toRadians(k * 34f);
+            Bullet nb = new Bullet();
+            nb.x = b.x;
+            nb.y = b.y;
+            nb.vx = (float) Math.sin(a) * 900f;
+            nb.vy = -(float) Math.cos(a) * 900f;
+            nb.dmg = b.dmg * 0.55f;
+            nb.kind = 2;
+            nb.r = 8f;
+            nb.angle = k * 34f;
+            pBullets.add(nb);
+        }
+        burst(b.x, b.y, 6, 160f, 7f, 0xFFB6F4FF, 0.3f);
     }
 
     private void killEnemy(Enemy e) {
@@ -800,16 +1100,41 @@ public class BattleScene extends Scene {
             return;
         }
         kills++;
-        int coinBase = e.type == E_TANK ? 26 : e.type == E_ZIG ? 14 : e.type == E_KAM ? 12 : 9;
+        int coinBase;
+        int scBase;
+        switch (e.type) {
+            case E_TANK: coinBase = 26; scBase = 260; break;
+            case E_SPLIT: coinBase = 32; scBase = 300; break;
+            case E_SHIELD: coinBase = 24; scBase = 240; break;
+            case E_ZIG: coinBase = 14; scBase = 120; break;
+            case E_KAM: coinBase = 12; scBase = 110; break;
+            case E_SNIPE: coinBase = 18; scBase = 200; break;
+            case E_SWARM: coinBase = 7; scBase = 60; break;
+            default: coinBase = 9; scBase = 100; break;
+        }
         int gold = Math.max(1, Math.round(coinBase * st.goldMul));
         earned += gold;
-        score += e.type == E_TANK ? 260 : 120;
+        score += scBase;
         energy = Math.min(maxEnergy, energy + 3.4f);
 
-        burst(e.x, e.y, e.type == E_TANK ? 26 : 16, 220f, 11f, 0xFFFFA13C, 0.55f);
+        boolean big = e.type == E_TANK || e.type == E_SPLIT || e.type == E_SHIELD;
+        burst(e.x, e.y, big ? 26 : 16, 220f, 11f, 0xFFFFA13C, 0.55f);
         burst(e.x, e.y, 8, 120f, 8f, 0xFFFFF0C0, 0.35f);
-        Sfx.play(Sfx.EXPLODE, e.type == E_TANK ? 0.5f : 0.32f);
+        Sfx.play(Sfx.EXPLODE, big ? 0.5f : 0.32f);
         addText("+" + gold, e.x, e.y - 6f, UI.GOLD, 20f);
+
+        // 分裂母机：炸出三架蜂群
+        if (e.type == E_SPLIT) {
+            float hpC = 10f * Math.max(1f, e.maxHp / 150f);
+            for (int k = 0; k < 3; k++) {
+                Enemy ch = makeEnemy(E_SWARM, e.x + (k - 1) * 36f, e.y - 4f);
+                ch.hp = ch.maxHp = hpC;
+                ch.vy = 175f + stage * 3f;
+                ch.baseX = rnd.nextFloat() * 6.28f;
+                enemies.add(ch);
+            }
+            addText("母舰解体！", e.x, e.y - 36f, 0xFFD6F06A, 19f);
+        }
 
         // 掉落
         float roll = rnd.nextFloat();
@@ -1053,7 +1378,26 @@ public class BattleScene extends Scene {
                 drawBoss(c, e);
                 continue;
             }
-            float s = e.type == E_TANK ? 0.92f : e.type == E_ZIG ? 0.86f : 0.84f;
+            // 狙击机蓄力：画出瞄准预警线
+            if (e.type == E_SNIPE && e.charge > 0) {
+                float k = 1f - e.charge / 0.95f;
+                int a = (int) (60 + 150 * k);
+                P.setColor((a << 24) | 0xFF3355);
+                P.setStrokeWidth(1.4f + 2.2f * k);
+                c.drawLine(e.x, e.y, e.aimX, e.aimY, P);
+                P.setColor((a << 24) | 0xFF6688);
+                c.drawCircle(e.aimX, e.aimY, 12f + 10f * k, P);
+                P.setStrokeWidth(1f);
+            }
+
+            float s = 0.84f;
+            if (e.type == E_TANK) s = 0.92f;
+            else if (e.type == E_ZIG) s = 0.86f;
+            else if (e.type == E_SHIELD) s = 0.90f;
+            else if (e.type == E_SPLIT) s = 0.96f;
+            else if (e.type == E_SNIPE) s = 0.90f;
+            else if (e.type == E_SWARM) s = 0.80f;
+
             c.save();
             c.translate(e.x, e.y);
             c.scale(s, s);
@@ -1061,7 +1405,10 @@ public class BattleScene extends Scene {
                 float ang = (float) Math.toDegrees(Math.atan2(e.vy, e.vx)) - 90f;
                 c.rotate(ang * 0.6f);
             }
-            c.drawBitmap(sprite(e.type), -sprite(e.type).getWidth() / 2f, -sprite(e.type).getHeight() / 2f, P);
+            android.graphics.Bitmap bm = sprite(e.type);
+            if (bm != null) {
+                c.drawBitmap(bm, -bm.getWidth() / 2f, -bm.getHeight() / 2f, P);
+            }
             if (e.hitFlash > 0) {
                 P.setAlpha((int) (e.hitFlash * 150));
                 P.setColor(0xFFFFFFFF);
@@ -1069,6 +1416,18 @@ public class BattleScene extends Scene {
                 P.setAlpha(255);
             }
             c.restore();
+
+            // 护盾机的能量护罩
+            if (e.type == E_SHIELD && e.guard > 0) {
+                float pr = 0.5f + 0.5f * (float) Math.sin(t * 6f);
+                P.setStyle(Paint.Style.STROKE);
+                P.setStrokeWidth(2.6f);
+                P.setColor((int) (110 + 80 * pr) << 24 | 0x5BE6FF);
+                c.drawCircle(e.x, e.y, e.r + 8f + pr * 3f, P);
+                P.setColor(0x33AFF4FF);
+                c.drawCircle(e.x, e.y, e.r + 4f, P);
+                P.setStyle(Paint.Style.FILL);
+            }
         }
     }
 
@@ -1082,6 +1441,14 @@ public class BattleScene extends Scene {
                 return Art.eTank;
             case E_KAM:
                 return Art.eKam;
+            case E_SHIELD:
+                return Art.eShield;
+            case E_SPLIT:
+                return Art.eSplit;
+            case E_SNIPE:
+                return Art.eSnipe;
+            case E_SWARM:
+                return Art.eSwarm;
             default:
                 return Art.boss;
         }
@@ -1111,8 +1478,10 @@ public class BattleScene extends Scene {
             android.graphics.Bitmap bm;
             if (b.kind == 1) bm = Art.bLaser;
             else if (b.kind == 2) bm = Art.bPlasma;
+            else if (b.kind == 5) bm = Art.bMissile;
             else bm = Art.bVulcan;
             if (b.kind == 2) c.rotate(b.angle);
+            else if (b.kind == 5) c.rotate(b.angle);
             c.drawBitmap(bm, -bm.getWidth() / 2f, -bm.getHeight() / 2f, P);
             c.restore();
         }
@@ -1197,8 +1566,13 @@ public class BattleScene extends Scene {
             UI.bar(c, 22f, 72f, bw, 5f, prog, 0xFF55E08C, 0xFF9BF0B0);
         } else if (boss != null) {
             float w = W - 150f;
-            UI.bar(c, 75f, 44f, w, 11f, boss.hp / boss.maxHp, 0xFFFF5A4A, 0xFFFFB03C);
-            UI.text(c, "BOSS", 75f + w / 2f, 70f, 13f, 0xFFFFD9A0, 1);
+            UI.bar(c, 75f, 88f, w, 11f, boss.hp / boss.maxHp, 0xFFFF5A4A, 0xFFFFB03C);
+            UI.text(c, "BOSS", 75f + w / 2f, 114f, 13f, 0xFFFFD9A0, 1);
+        }
+
+        // 融合标记
+        if (st.fused) {
+            UI.text(c, "融合 · " + st.fusionName, W - 22f, 104f, 13f, 0xFFB6F4FF, 2);
         }
 
         // 暂停

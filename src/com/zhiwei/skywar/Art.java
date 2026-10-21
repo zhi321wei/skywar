@@ -16,7 +16,8 @@ public class Art {
 
     public static Bitmap player;
     public static Bitmap eScout, eZig, eTank, eKam, boss;
-    public static Bitmap bVulcan, bLaser, bPlasma, bEnemy, bEnemyBig;
+    public static Bitmap eShield, eSplit, eSnipe, eSwarm;
+    public static Bitmap bVulcan, bLaser, bPlasma, bMissile, bEnemy, bEnemyBig;
     public static Bitmap nebula;
     public static Bitmap dot;
 
@@ -30,10 +31,15 @@ public class Art {
         eZig = makeZig();
         eTank = makeTank();
         eKam = makeKam();
+        eShield = makeShield();
+        eSplit = makeSplit();
+        eSnipe = makeSnipe();
+        eSwarm = makeSwarm();
         boss = makeBoss();
         bVulcan = makeVulcanBullet();
         bLaser = makeLaserBullet();
         bPlasma = makePlasmaBullet();
+        bMissile = makeMissileBullet();
         bEnemy = makeEnemyBullet(15, 0xFFF0503C, 0xFFFFD9A0);
         bEnemyBig = makeEnemyBullet(27, 0xFFB44BFF, 0xFFF0C8FF);
         nebula = makeNebula();
@@ -223,6 +229,159 @@ public class Art {
         return b;
     }
 
+    // ======================= 护盾护卫机 =======================
+    private static Bitmap makeShield() {
+        int w = 88, h = 88;
+        Bitmap b = newBmp(w, h);
+        Canvas c = new Canvas(b);
+        float cx = 44, cy = 44;
+
+        // 护盾光罩
+        P.setShader(new RadialGradient(cx, cy, 42, new int[]{0x00000000, 0x3333E0FF, 0x00000000},
+                new float[]{0.45f, 0.82f, 1f}, Shader.TileMode.CLAMP));
+        c.drawCircle(cx, cy, 42, P);
+        P.setShader(null);
+        P.setStyle(Paint.Style.STROKE);
+        P.setStrokeWidth(2.4f);
+        P.setColor(0xAA5BE6FF);
+        c.drawCircle(cx, cy, 36, P);
+        P.setStyle(Paint.Style.FILL);
+
+        // 机体（六边形）
+        Path body = poly(new float[]{44, 8, 72, 24, 72, 62, 44, 80, 16, 62, 16, 24});
+        glowRect(c, body, 0xFF2FA8E0, 9, 95);
+        P.setShader(new LinearGradient(16, 8, 72, 80, new int[]{0xFF9EE8FF, 0xFF2E86C8, 0xFF123A5C},
+                new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+        c.drawPath(body, P);
+        P.setShader(null);
+        outline(c, body, 0xFF0A2438, 1.8f);
+
+        // 装甲环
+        P.setStyle(Paint.Style.STROKE);
+        P.setStrokeWidth(2f);
+        P.setColor(0x66E8FBFF);
+        c.drawCircle(cx, cy, 22, P);
+        P.setStyle(Paint.Style.FILL);
+
+        // 核心
+        P.setShader(new RadialGradient(cx, cy, 14, new int[]{0xFFFFFFFF, 0xFF8FF0FF, 0x00000000},
+                new float[]{0f, 0.42f, 1f}, Shader.TileMode.CLAMP));
+        c.drawCircle(cx, cy, 14, P);
+        P.setShader(null);
+        P.setColor(0xFF0B3248);
+        c.drawCircle(cx, cy, 5f, P);
+        P.setColor(0xFFAFF4FF);
+        c.drawCircle(cx, cy, 2.6f, P);
+        return b;
+    }
+
+    // ======================= 分裂母机 =======================
+    private static Bitmap makeSplit() {
+        int w = 124, h = 100;
+        Bitmap b = newBmp(w, h);
+        Canvas c = new Canvas(b);
+        float cx = 62;
+
+        // 两侧子舱（矩形吊舱，先画，让主舱压在上面）
+        for (int k = -1; k <= 1; k += 2) {
+            float inner = cx + k * 30, outer = cx + k * 46;
+            RectF pod = new RectF(Math.min(inner, outer), 26, Math.max(inner, outer), 74);
+            P.setColor(0xFF5E7A1C);
+            c.drawRoundRect(pod, 7, 7, P);
+            S.setStyle(Paint.Style.STROKE);
+            S.setStrokeWidth(1.8f);
+            S.setColor(0xFF22300A);
+            c.drawRoundRect(pod, 7, 7, S);
+            S.setStyle(Paint.Style.FILL);
+            P.setColor(0xFFD6F06A);
+            c.drawCircle(cx + k * 38, 66, 3.6f, P);
+            P.setColor(0x88364A08);
+            c.drawRect(Math.min(inner, outer) + 3, 32, Math.max(inner, outer) - 3, 36, P);
+        }
+
+        // 主舱
+        Path body = poly(new float[]{cx, 6, cx + 28, 26, cx + 32, 56, cx + 18, 84, cx, 92,
+                cx - 18, 84, cx - 32, 56, cx - 28, 26});
+        glowRect(c, body, 0xFFB6E22A, 10, 90);
+        P.setShader(new LinearGradient(cx - 32, 6, cx + 32, 92, new int[]{0xFFE4FA9A, 0xFF9BC21C, 0xFF44580A},
+                new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+        c.drawPath(body, P);
+        P.setShader(null);
+        outline(c, body, 0xFF2A3606, 1.8f);
+
+        // 分舱线
+        P.setStyle(Paint.Style.STROKE);
+        P.setStrokeWidth(2f);
+        P.setColor(0x55FFFFFF);
+        c.drawLine(cx - 24, 46, cx + 24, 46, P);
+        P.setColor(0x44000000);
+        c.drawLine(cx, 20, cx, 86, P);
+        P.setStyle(Paint.Style.FILL);
+
+        // 中央核心
+        P.setShader(new RadialGradient(cx, 52, 15, new int[]{0xFFFFFDE0, 0xFFD6F04A, 0x00000000},
+                new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP));
+        c.drawCircle(cx, 52, 15, P);
+        P.setShader(null);
+        P.setColor(0xFF3A4708);
+        c.drawCircle(cx, 52, 4.6f, P);
+        return b;
+    }
+
+    // ======================= 狙击机 =======================
+    private static Bitmap makeSnipe() {
+        int w = 76, h = 82;
+        Bitmap b = newBmp(w, h);
+        Canvas c = new Canvas(b);
+        float cx = 38;
+
+        // 长炮管
+        P.setColor(0xFF2B2340);
+        c.drawRect(cx - 4, 4, cx + 4, 44, P);
+        P.setColor(0xFF8A7BD8);
+        c.drawRect(cx - 2, 4, cx + 2, 30, P);
+
+        // 后掠翼
+        Path wing = poly(new float[]{cx - 4, 30, 8, 52, 12, 62, cx - 6, 52, cx + 6, 52, 64, 62, 68, 52, cx + 4, 30});
+        P.setShader(new LinearGradient(8, 30, 68, 62, new int[]{0xFFB0A6F0, 0xFF6A5BB8}, null, Shader.TileMode.CLAMP));
+        c.drawPath(wing, P);
+        P.setShader(null);
+        outline(c, wing, 0xFF1A1530, 1.6f);
+
+        // 机身
+        Path body = poly(new float[]{cx, 16, cx + 12, 40, cx + 10, 68, cx, 78, cx - 10, 68, cx - 12, 40});
+        glowRect(c, body, 0xFF6C4BFF, 8, 85);
+        P.setShader(new LinearGradient(cx - 12, 16, cx + 12, 78, new int[]{0xFFDCD4FF, 0xFF6E5CC8, 0xFF2C2450},
+                new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+        c.drawPath(body, P);
+        P.setShader(null);
+        outline(c, body, 0xFF181230, 1.6f);
+
+        // 瞄准镜
+        P.setColor(0xFFFF4A6A);
+        c.drawCircle(cx, 46, 5f, P);
+        P.setColor(0xFFFFE0E8);
+        c.drawCircle(cx, 46, 2.2f, P);
+        return b;
+    }
+
+    // ======================= 蜂群机 =======================
+    private static Bitmap makeSwarm() {
+        int w = 44, h = 46;
+        Bitmap b = newBmp(w, h);
+        Canvas c = new Canvas(b);
+        Path body = poly(new float[]{22, 3, 34, 26, 26, 24, 22, 43, 18, 24, 10, 26});
+        glowRect(c, body, 0xFFFF9A22, 6, 100);
+        P.setShader(new LinearGradient(4, 2, 40, 42, new int[]{0xFFFFD68A, 0xFFF08A18, 0xFF7A3E04},
+                new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+        c.drawPath(body, P);
+        P.setShader(null);
+        outline(c, body, 0xFF3A1B02, 1.2f);
+        P.setColor(0xFFFFF3C4);
+        c.drawCircle(22, 24, 2.6f, P);
+        return b;
+    }
+
     // ======================= BOSS =======================
     private static Bitmap makeBoss() {
         int w = 420, h = 240;
@@ -341,6 +500,32 @@ public class Art {
         P.setShader(new RadialGradient(14, 14, 14, new int[]{0xFFFFFFFF, 0xFFB26BFF, 0x00A64BFF}, new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP));
         c.drawCircle(14, 14, 14, P);
         P.setShader(null);
+        return b;
+    }
+
+    private static Bitmap makeMissileBullet() {
+        int w = 26, h = 46;
+        Bitmap b = newBmp(w, h);
+        Canvas c = new Canvas(b);
+        // 尾焰
+        Path fl = poly(new float[]{9, 32, 17, 32, 13, 46});
+        glowRect(c, fl, 0xFFFF8A2E, 5, 220);
+        // 弹体
+        Path body = poly(new float[]{13, 2, 19, 14, 19, 34, 13, 40, 7, 34, 7, 14});
+        P.setShader(new LinearGradient(7, 2, 19, 40, new int[]{0xFFFFF2D8, 0xFFE8A15A, 0xFF8A4A16},
+                new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP));
+        c.drawPath(body, P);
+        P.setShader(null);
+        outline(c, body, 0xFF3A1B02, 1.2f);
+        // 尾翼
+        P.setColor(0xFFB06A2A);
+        c.drawRect(4, 30, 8, 38, P);
+        c.drawRect(18, 30, 22, 38, P);
+        // 导引头
+        P.setColor(0xFFFF5A3C);
+        c.drawCircle(13, 9, 3f, P);
+        P.setColor(0xFFFFFFFF);
+        c.drawCircle(13, 9, 1.4f, P);
         return b;
     }
 

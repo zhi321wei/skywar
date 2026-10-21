@@ -1,7 +1,11 @@
 build/
 tools/icon_preview.png
 tools/art_check.png
+tools/art_check2.png
+tools/push_api.py
+tools/gh_token.txt
 *.iml
+*.idsig
 .idea/
 .gradle/
 local.properties

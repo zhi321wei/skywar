@@ -138,7 +138,9 @@ public class StageScene extends Scene {
         UI.text(c, "装甲上限", lx, ly, 19f, UI.TXT_DIM, 0);
         UI.bold(c, (int) s.maxHp + "", rx, ly, 20f, UI.TXT, 0);
         UI.text(c, "主武器", lx, ly + 36f, 19f, UI.TXT_DIM, 0);
-        UI.bold(c, Data.W_NAME[s.wType] + " Lv." + s.wLv, rx, ly + 36f, 20f, UI.TXT, 0);
+        String wn = Data.W_NAME[s.wType] + " Lv." + s.wLv;
+        if (s.b != null) wn += " + " + Data.W_NAME[s.b.type] + " Lv." + s.b.lv;
+        UI.bold(c, wn, rx, ly + 36f, 18f, UI.TXT, 0);
         UI.text(c, "超级武器", lx, ly + 72f, 19f, UI.TXT_DIM, 0);
         UI.bold(c, Data.S_NAME[s.sType] + " Lv." + s.sLv, rx, ly + 72f, 20f, UI.TXT, 0);
         UI.text(c, "理论 DPS", lx, ly + 108f, 19f, UI.TXT_DIM, 0);
@@ -151,7 +153,10 @@ public class StageScene extends Scene {
         UI.text(c, "通关奖励", pl + 42f, pt + 352f, 20f, 0xFFCEA96A, 0);
         UI.coin(c, pl + pw - 142f, pt + 344f, 11f);
         UI.bold(c, UI.num(Data.stageReward(st)), pl + pw - 124f, pt + 352f, 22f, UI.GOLD, 0);
-        if (game.save.bestScore[selected] == 0) {
+        if (s.fused) {
+            UI.text(c, "融合效果 · " + s.fusionName, pl + 42f, pt + 396f, 17f, 0xFF8FE8FF, 0);
+            UI.text(c, s.fusionDesc, pl + 42f, pt + 422f, 15f, 0xFF7C93A8, 0);
+        } else if (game.save.bestScore[selected] == 0) {
             UI.text(c, "首次通关额外 +" + UI.num(Data.stageFirstBonus(st)), pl + 42f, pt + 396f, 17f, 0xFF55E08C, 0);
         }
 

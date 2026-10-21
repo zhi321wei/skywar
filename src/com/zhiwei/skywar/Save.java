@@ -12,7 +12,9 @@ public class Save {
 
     public int gold = 800;
     public int weapon = 0;
-    public int[] weaponLv = {1, 0, 0};
+    public int weapon2 = -1;          // 副武器槽（-1 = 空）
+    public int dual = 0;              // 1 = 已购买双联火控挂架
+    public int[] weaponLv = {1, 0, 0, 0};
     public int sup = 0;
     public int[] supLv = {1, 0, 0};
     public int[] partLv = {0, 0, 0, 0, 0};
@@ -39,6 +41,8 @@ public class Save {
             JSONObject o = new JSONObject(raw);
             gold = o.optInt("gold", gold);
             weapon = o.optInt("weapon", 0);
+            weapon2 = o.optInt("weapon2", -1);
+            dual = o.optInt("dual", 0);
             sup = o.optInt("sup", 0);
             maxStage = o.optInt("maxStage", 1);
             sfxOn = o.optInt("sfx", 1);
@@ -51,8 +55,11 @@ public class Save {
             readArr(o.optJSONArray("pl"), partLv, 0);
             readArr(o.optJSONArray("cons"), cons, 0);
             readArr(o.optJSONArray("best"), bestScore, 0);
-            if (weapon < 0 || weapon > 2) weapon = 0;
+            if (weapon < 0 || weapon >= Data.WN) weapon = 0;
             if (sup < 0 || sup > 2) sup = 0;
+            if (dual <= 0) { dual = 0; weapon2 = -1; }
+            if (weapon2 >= Data.WN) weapon2 = -1;
+            if (weapon2 >= 0 && weaponLv[weapon2] <= 0) weapon2 = -1;
             if (maxStage < 1) maxStage = 1;
             if (maxStage > Data.STAGES) maxStage = Data.STAGES;
             for (int i = 0; i < weaponLv.length; i++) {
@@ -75,7 +82,9 @@ public class Save {
 
     private void readArr(JSONArray a, int[] dst, int def) {
         if (a == null) return;
-        for (int i = 0; i < dst.length; i++) dst[i] = a.optInt(i, def);
+        // 只读取存档里真实存在的长度，避免新增武器位被默认值解锁
+        int n = Math.min(dst.length, a.length());
+        for (int i = 0; i < n; i++) dst[i] = a.optInt(i, def);
     }
 
     private JSONArray arr(int[] v) {
@@ -89,6 +98,8 @@ public class Save {
             JSONObject o = new JSONObject();
             o.put("gold", gold);
             o.put("weapon", weapon);
+            o.put("weapon2", weapon2);
+            o.put("dual", dual);
             o.put("sup", sup);
             o.put("maxStage", maxStage);
             o.put("sfx", sfxOn);
@@ -120,10 +131,28 @@ public class Save {
         save();
     }
 
+    /** 是否已解锁某型主武器 */
+    public boolean hasWeapon(int idx) {
+        return idx >= 0 && idx < Data.WN && weaponLv[idx] > 0;
+    }
+
+    /** 当前装备的武器列表（主 / 副） */
+    public int[] equippedList() {
+        if (dual > 0 && weapon2 >= 0 && hasWeapon(weapon2) && weapon2 != weapon) {
+            return new int[]{weapon, weapon2};
+        }
+        if (dual > 0 && weapon2 == weapon && hasWeapon(weapon)) {
+            return new int[]{weapon, weapon2};
+        }
+        return new int[]{weapon};
+    }
+
     public void resetAll() {
         gold = 800;
         weapon = 0;
-        weaponLv = new int[]{1, 0, 0};
+        weapon2 = -1;
+        dual = 0;
+        weaponLv = new int[]{1, 0, 0, 0};
         sup = 0;
         supLv = new int[]{1, 0, 0};
         partLv = new int[]{0, 0, 0, 0, 0};
