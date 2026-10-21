@@ -1,0 +1,6 @@
+build/
+tools/icon_preview.png
+*.iml
+.idea/
+.gradle/
+local.properties
