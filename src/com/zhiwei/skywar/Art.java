@@ -23,6 +23,7 @@ public class Art {
 
     private static final Paint P = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static final Paint S = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static boolean built;
 
     /** 每帧开头复位共享画笔，避免上一帧残留的 style / alpha / shader 影响本帧 */
     static void resetPaint() {
@@ -37,7 +38,7 @@ public class Art {
     }
 
     public static void build() {
-        if (player != null) return;
+        if (built) return;
         player = makePlayer();
         eScout = makeScout();
         eZig = makeZig();
@@ -54,8 +55,28 @@ public class Art {
         bMissile = makeMissileBullet();
         bEnemy = makeEnemyBullet(15, 0xFFF0503C, 0xFFFFD9A0);
         bEnemyBig = makeEnemyBullet(27, 0xFFB44BFF, 0xFFF0C8FF);
-        nebula = makeNebula();
+        // 背景是最大的一张图（720x1240 ≈ 3.5MB），低内存机型上单独兜一层，
+        // 失败时退化成纯色底，也不至于整屏全黑
+        try {
+            nebula = makeNebula();
+        } catch (Throwable t) {
+            android.util.Log.e("SkyWar", "nebula failed, using flat backdrop", t);
+            nebula = makeFlatBackdrop();
+        }
         dot = makeDot();
+        built = true;
+    }
+
+    /** 纯色兜底背景（64x64，会被拉伸平铺使用） */
+    private static Bitmap makeFlatBackdrop() {
+        Bitmap b = newBmp(64, 64);
+        Canvas c = new Canvas(b);
+        P.setShader(null);
+        P.setStyle(Paint.Style.FILL);
+        P.setAlpha(255);
+        P.setColor(0xFF070C18);
+        c.drawRect(0, 0, 64, 64, P);
+        return b;
     }
 
     private static Bitmap newBmp(int w, int h) {
