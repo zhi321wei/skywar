@@ -2,7 +2,7 @@
 
 一款纵向卷轴空战射击手游（类似《雷电》系列），纯 Java + Canvas 实现，**零第三方依赖**，全部美术、音效、BGM 均由代码/脚本程序化生成。
 
-> 当前版本：**1.1**（versionCode 2）
+> 当前版本：**1.2**（versionCode 3）
 
 ## 下载安装
 
@@ -71,7 +71,7 @@
 修改 `VERSION` 文件后执行 `bash build.sh` 即可：
 
 ```
-versionName=1.1
+versionName=1.2
 versionCode=2
 ```
 
@@ -88,7 +88,7 @@ bash build.sh          # 产出 dist/SkyWar-<version>.apk 与 dist/SkyWar.apk
 
 ```bash
 python tools/gen_icon.py    # 生成全部密度的启动图标
-python tools/gen_audio.py   # 合成音效与循环 BGM（WAV）
+python tools/gen_audio.py   # 合成 10 个音效 + 20.6 秒循环 BGM（WAV）
 ```
 
 ## 工程结构
@@ -118,6 +118,13 @@ src/com/zhiwei/skywar/
 
 ## 更新日志
 
+### v1.2
+- 重制**背景音乐**：140 BPM 史诗电子，12 小节 20.6 秒循环，Am–F–C–G 和声，四层编曲（铺底 Pad / 低音 / 鼓组 / 琶音）+ 主旋律，段落做渐强
+- 修复游玩中**画面突然变透明/透出下层**：强制 Surface 为不透明格式、每帧整屏铺不透明底色、每帧复位共享画笔状态
+- 修复屏幕震动时画面边缘露底
+- 修复敌机被击中时不闪烁（`setAlpha` 被 `setColor` 覆盖）
+- 修复狙击机预警圈画成实心圆盖住机身
+
 ### v1.1
 - 新增主武器 **追猎导弹**（自动追踪 + 爆炸溅射，6 级齐射成长）
 - 新增商店道具 **双联火控挂架**：解锁第二主武器槽，双武器独立开火
@@ -129,4 +136,4 @@ src/com/zhiwei/skywar/
 
 ### v1.0
 - 首个版本：10 关战役、3 主武器、3 超级武器、5 类配件、商店与机库改造系统
-- 程序化美术与合成音频，安装包约 1 MB
+- 程序化美术与合成音频（BGM 为 140 BPM 史诗电子，12 小节循环），安装包约 1.2 MB

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -22,6 +23,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private boolean surfaceReady;
 
     private Scene scene;
+    private int drawErrs;
     private final Paint blackPaint = new Paint();
     private final Paint fadePaint = new Paint();
 
@@ -31,7 +33,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     public GameView(Context context) {
         super(context);
+        // 强制 Surface 不透明：否则部分机型在 GPU 合成路径下会把未覆盖区域与下层混合，
+        // 表现为「游戏画面突然变透明 / 透出桌面」
+        getHolder().setFormat(PixelFormat.OPAQUE);
         getHolder().addCallback(this);
+        setBackgroundColor(Color.BLACK);
         setFocusable(true);
         setKeepScreenOn(true);
         blackPaint.setColor(Color.BLACK);
@@ -164,7 +170,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 }
                 if (c == null) c = holder.lockCanvas();
                 if (c != null) {
-                    c.drawRect(0, 0, getWidth(), getHeight(), blackPaint);
+                    // 先复位共享画笔，再整屏铺不透明底色，杜绝残影/透明
+                    Art.resetPaint();
+                    UI.resetPaints();
+                    c.drawColor(0xFF000000);
                     c.save();
                     c.translate(offX, offY);
                     c.scale(scale, scale);
@@ -172,7 +181,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                     if (sc != null) {
                         try {
                             sc.draw(c);
-                        } catch (Throwable ignored) {
+                        } catch (Throwable e) {
+                            if (drawErrs < 5) {
+                                drawErrs++;
+                                android.util.Log.e("SkyWar", "draw failed", e);
+                            }
                         }
                         if (sc.fade < 1f) {
                             fadePaint.setAlpha((int) (255 * (1f - sc.fade)));

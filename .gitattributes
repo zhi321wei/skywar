@@ -1,0 +1,5 @@
+* text=auto
+*.wav binary
+*.apk binary
+*.png binary
+*.jks binary

@@ -24,6 +24,18 @@ public class Art {
     private static final Paint P = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static final Paint S = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    /** 每帧开头复位共享画笔，避免上一帧残留的 style / alpha / shader 影响本帧 */
+    static void resetPaint() {
+        P.setShader(null);
+        P.setAlpha(255);
+        P.setStyle(Paint.Style.FILL);
+        P.setStrokeWidth(1f);
+        P.setColor(0xFFFFFFFF);
+        P.setXfermode(null);
+        P.setMaskFilter(null);
+        P.setColorFilter(null);
+    }
+
     public static void build() {
         if (player != null) return;
         player = makePlayer();

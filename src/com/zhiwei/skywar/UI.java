@@ -30,6 +30,25 @@ public class UI {
         TP.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
     }
 
+    /** 每帧开头复位共享画笔，防止渐变/描边/透明度状态串帧 */
+    static void resetPaints() {
+        P.setShader(null);
+        P.setAlpha(255);
+        P.setStyle(Paint.Style.FILL);
+        P.setStrokeWidth(1f);
+        P.setColor(0xFFFFFFFF);
+        P.setXfermode(null);
+        for (Paint p : new Paint[]{T, TP}) {
+            p.setShader(null);
+            p.setAlpha(255);
+            p.setStyle(Paint.Style.FILL);
+            p.setStrokeWidth(1f);
+            p.setColor(0xFFFFFFFF);
+            p.setShadowLayer(0f, 0f, 0f, 0);
+            p.setXfermode(null);
+        }
+    }
+
     public static String num(int v) {
         String s = Integer.toString(Math.max(0, v));
         StringBuilder sb = new StringBuilder();
