@@ -1295,21 +1295,31 @@ public class BattleScene extends Scene {
             P.setColor(0x66CFE8FF);
             c.drawRect(sx, sy, sx + 1.6f, sy + 10f + (i % 4) * 4f, P);
         }
+        // 星线用的是半透明色，setColor 会连带把画笔 alpha 改掉；
+        // 不复位的话，后面 drawBitmap 画出来的敌机 / 子弹都会按半透明绘制（看起来特别暗）
+        P.setAlpha(255);
 
         // 掉落物
         drawPowers(c);
+        P.setAlpha(255);
         // 敌人
         drawEnemies(c);
+        P.setAlpha(255);      // 护罩 / 狙击预警线是半透明色，别传给后面的子弹
         // 玩家子弹
         drawPlayerBullets(c);
+        P.setAlpha(255);
         // 僚机
         drawWingmen(c);
+        P.setAlpha(255);
         // 玩家
         drawPlayer(c);
+        P.setAlpha(255);      // 护盾环是半透明色，不复位会让敌弹变成半透明
         // 敌弹
         drawEnemyBullets(c);
+        P.setAlpha(255);
         // 粒子
         drawParticles(c);
+        P.setAlpha(255);
         // 飘字
         for (int i = 0; i < texts.size(); i++) {
             FText f = texts.get(i);
@@ -1415,6 +1425,8 @@ public class BattleScene extends Scene {
             }
             android.graphics.Bitmap bm = sprite(e.type);
             if (bm != null) {
+                // 前面画过预警线/护罩，画笔 alpha 可能是半透明值，机身必须复位后再画
+                P.setAlpha(255);
                 c.drawBitmap(bm, -bm.getWidth() / 2f, -bm.getHeight() / 2f, P);
             }
             if (e.hitFlash > 0) {
@@ -1467,6 +1479,7 @@ public class BattleScene extends Scene {
         c.save();
         c.translate(e.x, e.y);
         c.scale(sc, sc);
+        P.setAlpha(255);
         c.drawBitmap(Art.boss, -Art.boss.getWidth() / 2f, -Art.boss.getHeight() / 2f, P);
         c.restore();
         // 核心脉冲
@@ -1490,6 +1503,7 @@ public class BattleScene extends Scene {
             else bm = Art.bVulcan;
             if (b.kind == 2) c.rotate(b.angle);
             else if (b.kind == 5) c.rotate(b.angle);
+            P.setAlpha(255);
             c.drawBitmap(bm, -bm.getWidth() / 2f, -bm.getHeight() / 2f, P);
             c.restore();
         }
@@ -1503,6 +1517,8 @@ public class BattleScene extends Scene {
             c.translate(b.x, b.y);
             float sc = b.kind == 4 ? 1.15f : 1f;
             c.scale(sc, sc);
+            // 画笔 alpha 若被前面的半透明绘制改过，这里的子弹就会发暗，画之前强制复位
+            P.setAlpha(255);
             c.drawBitmap(bm, -bm.getWidth() / 2f, -bm.getHeight() / 2f, P);
             c.restore();
         }
