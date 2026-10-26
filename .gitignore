@@ -9,3 +9,4 @@ tools/gh_token.txt
 .idea/
 .gradle/
 local.properties
+dist/taptap/*.apk

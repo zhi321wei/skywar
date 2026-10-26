@@ -28,6 +28,33 @@ public class GameActivity extends Activity {
             getWindow().setAttributes(lp);
         }
 
+        // 首次启动必须先同意隐私政策才能进入游戏。
+        // 此时 GameView / Sfx / 存档一律尚未创建，符合「同意前不触碰任何数据」的要求。
+        if (!Privacy.agreed(this)) {
+            showPrivacyGate();
+            return;
+        }
+
+        startGame();
+    }
+
+    /** 隐私政策同意界面：不创建 GameView，显示系统栏便于阅读与返回 */
+    private void showPrivacyGate() {
+        try {
+            getWindow().setStatusBarColor(0xFF060A12);
+            getWindow().setNavigationBarColor(0xFF060A12);
+        } catch (Throwable ignored) {
+        }
+        setContentView(PrivacyGate.build(this, new Runnable() {
+            @Override
+            public void run() {
+                // 同意后重建 Activity，走正常启动流程
+                recreate();
+            }
+        }));
+    }
+
+    private void startGame() {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(0xFF000000);
 
@@ -105,8 +132,9 @@ public class GameActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (gameView == null) return;   // 隐私政策页：保留系统栏，便于阅读与返回
         hideSystemUi();
-        if (gameView != null) gameView.onResumeGame();
+        gameView.onResumeGame();
     }
 
     @Override
