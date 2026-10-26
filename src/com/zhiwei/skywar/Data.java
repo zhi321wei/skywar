@@ -121,11 +121,6 @@ public class Data {
     };
     public static final int[] P_COST = {160, 180, 200, 150, 230};
 
-    // ---------------- 消耗品 ----------------
-    public static final String[] C_NAME = {"应急修理包", "护盾电池", "超武充能器"};
-    public static final String[] C_DESC = {"开局装甲 +40", "开局护盾 +40", "开局超武能量 +50%"};
-    public static final int[] C_PRICE = {320, 280, 420};
-
     // ---------------- 关卡 ----------------
     public static final String[] STAGE_NAME = {
             "星港警报", "陨石带伏击", "赤色风暴", "极地堡垒", "深空舰队",
@@ -137,12 +132,17 @@ public class Data {
         return STAGE_NAME[i];
     }
 
+    /** 每局金币收益统一按 1/4 结算，取整到 5 */
+    private static int quarter(int v) {
+        return Math.max(10, Math.round(v / 4f / 5f) * 5);
+    }
+
     public static int stageReward(int stage) {
-        return 260 + 170 * stage;
+        return quarter(260 + 170 * stage);
     }
 
     public static int stageFirstBonus(int stage) {
-        return 300 + 120 * stage;
+        return quarter(300 + 120 * stage);
     }
 
     public static float stageDuration(int stage) {
@@ -182,30 +182,41 @@ public class Data {
         public int vulcanPierce;
     }
 
+    /**
+     * 主武器升级强度换算。
+     * v1.8 起把 1~6 级的成长曲线整体压进旧的 1~4 级区间：
+     * 1 级 = 旧 1 级，满级（6 级）= 旧 4 级。
+     */
+    public static float effLv(int lv) {
+        int l = Math.max(1, Math.min(MAX_LV, lv));
+        return 1f + (l - 1) * ((4f - 1f) / (MAX_LV - 1f));
+    }
+
     public static Wpn wpn(int type, int lv) {
         Wpn w = new Wpn();
         w.type = c(type);
         w.lv = Math.max(1, Math.min(MAX_LV, lv));
-        int l = w.lv;
+        float e = effLv(w.lv);       // 满级只到旧 4 级
+        float g = e - 1f;            // 成长量
         w.speed = 1180f;
         w.streams = 1;
         if (w.type == 0) {
-            w.interval = 0.115f - 0.009f * (l - 1);
-            w.damage = 8f + 2.4f * (l - 1);
-            w.streams = 1 + (l - 1) / 2;
+            w.interval = 0.115f - 0.009f * g;
+            w.damage = 8f + 2.4f * g;
+            w.streams = 1 + (int) (g / 2f);
         } else if (w.type == 1) {
-            w.interval = 0.22f - 0.014f * (l - 1);
-            w.damage = 22f + 6f * (l - 1);
-            w.pierce = 1 + l / 2;
+            w.interval = 0.22f - 0.014f * g;
+            w.damage = 22f + 6f * g;
+            w.pierce = 1 + (int) (e / 2f);
             w.speed = 1500f;
         } else if (w.type == 2) {
-            w.interval = 0.15f - 0.006f * (l - 1);
-            w.damage = 4.2f + 1.1f * (l - 1);
-            w.spread = 2 + l;
+            w.interval = 0.15f - 0.006f * g;
+            w.damage = 4.2f + 1.1f * g;
+            w.spread = 2 + Math.round(e);
         } else {
-            w.interval = 0.75f - 0.04f * (l - 1);
-            w.damage = 18f + 6f * (l - 1);
-            w.missiles = 1 + l / 2;
+            w.interval = 0.75f - 0.04f * g;
+            w.damage = 18f + 6f * g;
+            w.missiles = 1 + (int) (e / 2f);
             w.speed = 620f;
         }
         return w;

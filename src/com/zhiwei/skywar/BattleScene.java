@@ -136,23 +136,6 @@ public class BattleScene extends Scene {
         py = H - 180f;
         invuln = 1.2f;
 
-        // 开局补给消耗
-        if (game.save.cons[0] > 0) {
-            game.save.cons[0]--;
-            maxHp += 40f;
-            hp = maxHp;
-        }
-        if (game.save.cons[1] > 0) {
-            game.save.cons[1]--;
-            maxShield += 40f;
-            shield = maxShield;
-        }
-        if (game.save.cons[2] > 0) {
-            game.save.cons[2]--;
-            energy = maxEnergy * 0.5f;
-        }
-        game.save.save();
-
         bPause.set(W - 78f, 26f, W - 22f, 82f);
         btnSuperX = W - 92f;
         btnSuperY = H - 100f;
@@ -1112,7 +1095,8 @@ public class BattleScene extends Scene {
             case E_SWARM: coinBase = 7; scBase = 60; break;
             default: coinBase = 9; scBase = 100; break;
         }
-        int gold = Math.max(1, Math.round(coinBase * st.goldMul));
+        // v1.8：单局金币产出压到原来的 1/4
+        int gold = Math.max(1, Math.round(coinBase * st.goldMul * 0.25f));
         earned += gold;
         score += scBase;
         energy = Math.min(maxEnergy, energy + 3.4f);

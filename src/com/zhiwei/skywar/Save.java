@@ -20,7 +20,6 @@ public class Save {
     public int[] partLv = {0, 0, 0, 0, 0};
     public int maxStage = 1;
     public int[] bestScore = new int[Data.STAGES];
-    public int[] cons = {0, 0, 0};
     public int sfxOn = 1;
     public int musicOn = 1;
     public int totalKills = 0;
@@ -53,7 +52,6 @@ public class Save {
             readArr(o.optJSONArray("wl"), weaponLv, 1);
             readArr(o.optJSONArray("sl"), supLv, 1);
             readArr(o.optJSONArray("pl"), partLv, 0);
-            readArr(o.optJSONArray("cons"), cons, 0);
             readArr(o.optJSONArray("best"), bestScore, 0);
             if (weapon < 0 || weapon >= Data.WN) weapon = 0;
             if (sup < 0 || sup > 2) sup = 0;
@@ -110,7 +108,6 @@ public class Save {
             o.put("wl", arr(weaponLv));
             o.put("sl", arr(supLv));
             o.put("pl", arr(partLv));
-            o.put("cons", arr(cons));
             o.put("best", arr(bestScore));
             sp.edit().putString("data", o.toString()).apply();
         } catch (Throwable ignored) {
@@ -158,7 +155,6 @@ public class Save {
         partLv = new int[]{0, 0, 0, 0, 0};
         maxStage = 1;
         bestScore = new int[Data.STAGES];
-        cons = new int[]{0, 0, 0};
         totalKills = 0;
         totalGold = 0;
         clears = 0;

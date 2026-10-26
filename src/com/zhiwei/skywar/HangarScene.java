@@ -53,7 +53,7 @@ public class HangarScene extends Scene {
             bTabs[i].set(l, 132f, l + tw, 196f);
         }
         float top = 212f;
-        float bottom = H - 200f;
+        float bottom = H - 164f;
         int n = count();
         float cg = 12f;
         float ch = (bottom - top - cg * (n - 1)) / n;
@@ -312,10 +312,10 @@ public class HangarScene extends Scene {
 
     private void drawSummary(Canvas c) {
         Data.Stats s = Data.stats(game.save);
-        UI.panel(c, 22f, H - 190f, W - 22f, H - 18f);
+        UI.panel(c, 22f, H - 154f, W - 22f, H - 18f);
 
         // 第一行：四项核心数值
-        float y = H - 154f;
+        float y = H - 118f;
         float lx = 44f;
         UI.text(c, "装甲", lx, y, 15f, UI.TXT_DIM, 0);
         UI.bold(c, (int) s.maxHp + "", lx, y + 26f, 21f, 0xFF6FE0FF, 0);
@@ -326,20 +326,8 @@ public class HangarScene extends Scene {
         UI.text(c, "副炮", lx + 324f, y, 15f, UI.TXT_DIM, 0);
         UI.bold(c, s.sideGuns + " 对", lx + 324f, y + 26f, 21f, UI.TXT, 0);
 
-        // 第二行：携带补给
-        float y2 = H - 92f;
-        UI.text(c, "携带补给", lx, y2, 14f, UI.TXT_DIM, 0);
-        float cx = lx + 84f;
-        for (int i = 0; i < 3; i++) {
-            int cnt = game.save.cons[i];
-            float bx = cx + i * 84f;
-            UI.fillRound(c, bx, y2 - 16f, bx + 76f, y2 + 8f, 8, cnt > 0 ? 0x332FE0C0 : 0x1AFFFFFF);
-            UI.text(c, Data.C_NAME[i].substring(0, 2) + " x" + cnt, bx + 8f, y2 + 3f, 14f,
-                    cnt > 0 ? 0xFF9FF0C8 : 0xFF55677A, 0);
-        }
-
-        // 第三行：融合状态
-        float y3 = H - 44f;
+        // 第二行：融合状态
+        float y3 = H - 46f;
         if (s.fused) {
             UI.bold(c, "融合 · " + s.fusionName, lx, y3, 17f, 0xFFB6F4FF, 0);
             UI.text(c, s.fusionDesc, lx + 160f, y3, 15f, 0xFF7C93A8, 0);
