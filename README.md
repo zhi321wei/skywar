@@ -11,6 +11,15 @@
 
 安装要求：Android 5.0（API 21）及以上，仅需竖屏，无需任何权限。
 
+## 官方页面
+
+- 游戏介绍页：https://zhi321wei.github.io/skywar/
+- 隐私政策：https://zhi321wei.github.io/skywar/privacy.html
+
+## 隐私
+
+本游戏不收集任何个人信息，不申请任何系统权限（安装包未声明 `INTERNET` 权限，系统层面无法联网），无第三方 SDK、无广告、无内购。全部进度仅保存在本机应用私有目录，卸载即删除。详见[隐私政策](https://zhi321wei.github.io/skywar/privacy.html)。
+
 ## 玩法
 
 | 模块 | 说明 |
