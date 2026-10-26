@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>苍穹战机 SkyWar · 竖屏太空射击</title>
+<meta name="description" content="《苍穹战机 SkyWar》是一款纯单机竖屏太空射击游戏：8 种敌机、4 种主武器、双武器融合、超级武器与僚机编队。完全免费、无需联网、不收集任何信息。">
+<link rel="icon" href="./assets/icon.png">
+<style>
+  :root{
+    --panel:rgba(18,30,50,.72); --line:rgba(120,190,255,.20);
+    --txt:#dfe9f6; --dim:#8fa4bd; --accent:#4fd8ff; --accent2:#7c9cff; --green:#55e08c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1100px 700px at 82% -8%, rgba(80,150,255,.16), transparent 62%),
+      radial-gradient(900px 620px at 8% 12%, rgba(120,80,255,.14), transparent 60%),
+      radial-gradient(700px 500px at 50% 108%, rgba(40,200,220,.10), transparent 65%),
+      linear-gradient(180deg,#05080f 0%,#070d18 42%,#04060c 100%);
+    background-attachment:fixed; color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.78; -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.75;
+    background-image:
+      radial-gradient(1.4px 1.4px at 12% 18%, rgba(255,255,255,.85), transparent),
+      radial-gradient(1.2px 1.2px at 78% 12%, rgba(200,230,255,.75), transparent),
+      radial-gradient(1px 1px at 34% 42%, rgba(255,255,255,.6), transparent),
+      radial-gradient(1.5px 1.5px at 62% 66%, rgba(190,225,255,.7), transparent),
+      radial-gradient(1px 1px at 88% 52%, rgba(255,255,255,.55), transparent),
+      radial-gradient(1.1px 1.1px at 22% 78%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1.3px 1.3px at 50% 88%, rgba(210,235,255,.6), transparent),
+      radial-gradient(1px 1px at 70% 32%, rgba(255,255,255,.45), transparent);
+    background-size:100% 100%;
+  }
+  .wrap{position:relative; z-index:1; max-width:880px; margin:0 auto; padding:0 22px 96px}
+
+  header{padding:52px 0 8px; text-align:center}
+  .badge{
+    display:inline-block; font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent); border:1px solid rgba(79,216,255,.34); border-radius:999px;
+    padding:5px 15px; margin-bottom:20px; background:rgba(79,216,255,.07);
+  }
+  h1{
+    font-size:clamp(30px,6vw,46px); margin:0 0 10px; letter-spacing:.05em; font-weight:800;
+    background:linear-gradient(100deg,#fff 8%,#9fe4ff 46%,#7c9cff 96%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{color:var(--dim); font-size:15px; letter-spacing:.08em}
+
+  .shot{
+    margin:30px 0 12px; border-radius:16px; overflow:hidden;
+    border:1px solid var(--line); box-shadow:0 18px 60px rgba(0,0,0,.6);
+    line-height:0;
+  }
+  .shot img{width:100%; height:auto; display:block}
+
+  .cta{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin:26px 0 6px}
+  .btn{
+    display:inline-flex; align-items:center; gap:9px; text-decoration:none;
+    padding:12px 24px; border-radius:11px; font-size:15px; font-weight:600; letter-spacing:.03em;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn-main{
+    color:#04121c; background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 8px 24px rgba(79,216,255,.28);
+  }
+  .btn-ghost{
+    color:#bfe9ff; border:1px solid rgba(120,190,255,.34); background:rgba(30,60,100,.28);
+  }
+  .meta{text-align:center; color:#6f849c; font-size:13px; margin-top:14px; letter-spacing:.04em}
+
+  section{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:22px 24px; margin:16px 0 0; backdrop-filter:blur(6px);
+  }
+  h2{
+    margin:0 0 14px; font-size:17px; letter-spacing:.03em; color:#cfeaff;
+    display:flex; align-items:center; gap:10px; font-weight:700;
+  }
+  h2::before{
+    content:""; width:4px; height:17px; border-radius:2px;
+    background:linear-gradient(180deg,var(--accent),var(--accent2));
+  }
+  p{margin:0 0 10px; font-size:15px; color:#cdd9e8}
+  p:last-child{margin-bottom:0}
+  ul{margin:6px 0 0; padding-left:20px}
+  li{font-size:15px; color:#cdd9e8; margin:7px 0}
+  strong{color:#fff; font-weight:600}
+
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:6px}
+  .card{
+    border:1px solid rgba(120,190,255,.14); border-radius:11px; padding:14px 16px;
+    background:linear-gradient(160deg,rgba(30,60,100,.32),rgba(14,24,42,.42));
+  }
+  .card .t{font-size:14px; color:#9fc6e6; letter-spacing:.06em; margin-bottom:3px}
+  .card .v{font-size:15px; color:#fff; font-weight:600}
+  .card .d{font-size:13px; color:#8fa4bd; margin-top:4px; line-height:1.6}
+
+  .tag{
+    display:inline-block; font-size:12px; padding:2px 10px; border-radius:999px; margin:0 6px 6px 0;
+    background:rgba(79,216,255,.12); border:1px solid rgba(79,216,255,.3); color:#9fe4ff;
+  }
+  .tag.g{background:rgba(85,224,140,.13); border-color:rgba(85,224,140,.32); color:#8df0b4}
+
+  footer{
+    margin-top:34px; padding-top:22px; border-top:1px solid rgba(120,190,255,.14);
+    text-align:center; color:#6f849c; font-size:13px; line-height:2;
+  }
+  footer a{color:var(--accent2); text-decoration:none; border-bottom:1px dotted rgba(124,156,255,.5)}
+  footer a:hover{color:var(--accent)}
+  @media (max-width:560px){
+    .grid{grid-template-columns:1fr}
+    section{padding:18px 16px}
+    header{padding:36px 0 6px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">SkyWar</div>
+    <h1>苍穹战机</h1>
+    <div class="sub">竖屏太空射击 &nbsp;·&nbsp; 纯单机 &nbsp;·&nbsp; 完全免费</div>
+  </header>
+
+  <div class="shot">
+    <img src="./assets/feature.png" alt="苍穹战机 SkyWar">
+  </div>
+
+  <div class="cta">
+    <a class="btn btn-main" href="https://github.com/zhi321wei/skywar/releases/latest">下载 APK</a>
+    <a class="btn btn-ghost" href="https://github.com/zhi321wei/skywar">查看源码</a>
+  </div>
+  <div class="meta">Android 5.0 及以上 &nbsp;·&nbsp; 约 2.3 MB &nbsp;·&nbsp; 无任何权限</div>
+
+  <section>
+    <h2>玩法</h2>
+    <p>用手指拖动战机，自动开火。击落敌机拾取能量，攒满释放超级武器。每关结束结算金币，回到机库改造装备，再挑战更深的宙域。</p>
+    <ul>
+      <li><strong>4 种主武器</strong>：火神机炮、脉冲激光、离子散射、追猎导弹，各自 6 级强化</li>
+      <li><strong>双联火控</strong>：装上第二主武器挂架后可同时携带两把武器，特定组合触发<strong>融合</strong>效果（共 10 种组合）</li>
+      <li><strong>8 种敌机 + 首领</strong>：侦察机、蛇形机、重装机、神风机、护盾机、分裂母机、狙击机、蜂群机</li>
+      <li><strong>超级武器</strong>：全屏轰炸与相位护盾，改变整局的节奏</li>
+      <li><strong>僚机编队</strong>：随关卡推进逐步扩充侧翼火力</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>特点</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="t">零权限</div>
+        <div class="v">连网络权限都没有</div>
+        <div class="d">安装包未声明任何系统权限，游戏全程离线运行</div>
+      </div>
+      <div class="card">
+        <div class="t">零收集</div>
+        <div class="v">不采集任何信息</div>
+        <div class="d">无账号、无统计 SDK、无广告，进度只存在本机</div>
+      </div>
+      <div class="card">
+        <div class="t">零付费</div>
+        <div class="v">完全免费无内购</div>
+        <div class="d">金币靠正常游玩获得，不存在真实货币购买</div>
+      </div>
+      <div class="card">
+        <div class="t">全程序化美术</div>
+        <div class="v">0 张外部图片</div>
+        <div class="d">战机、弹幕、星云、音效与 BGM 全部由代码实时生成</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>标签</h2>
+    <div>
+      <span class="tag">太空射击</span><span class="tag">弹幕</span><span class="tag">竖屏</span>
+      <span class="tag">单机</span><span class="tag">休闲</span><span class="tag">飞行</span>
+      <span class="tag g">无内购</span><span class="tag g">无需联网</span><span class="tag g">无广告</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>关于</h2>
+    <p>《苍穹战机》是一款由个人开发者独立完成的单机射击游戏。游戏内所有美术资源由程序在运行时绘制，所有音效与背景音乐由代码合成，不含任何需要联网加载或需要授权的外部素材。</p>
+    <p>如果你在游玩中遇到问题，欢迎在 <a href="https://github.com/zhi321wei/skywar/issues">GitHub Issues</a> 反馈。</p>
+  </section>
+
+  <footer>
+    <div>《苍穹战机》SkyWar &nbsp;·&nbsp; 包名 com.zhiwei.skywar</div>
+    <div><a href="./privacy.html">隐私政策</a> &nbsp;·&nbsp; <a href="https://github.com/zhi321wei/skywar/releases/latest">下载</a> &nbsp;·&nbsp; <a href="https://github.com/zhi321wei/skywar">源代码</a></div>
+  </footer>
+
+</div>
+</body>
+</html>
